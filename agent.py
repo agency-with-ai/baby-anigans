@@ -219,7 +219,7 @@ def run_agent(client, model, question, files, emit, max_steps=8, search_only=Fal
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("question")
-    parser.add_argument("--file", type=Path, default=Path(__file__).with_name("spec.txt"))
+    parser.add_argument("--file", type=Path, default=Path(__file__).with_name("sample.txt"))
     parser.add_argument("--model", default="qwen3:1.7b", help="Ollama model name (default: %(default)s)")
     parser.add_argument("--host", default="http://localhost:11434")
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")

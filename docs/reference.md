@@ -60,7 +60,7 @@ Run `python agent.py --help` for the full interface.
 
 | Option | Purpose | Default |
 |---|---|---|
-| `--file PATH` | Select one UTF-8 text file | Bundled `spec.txt` |
+| `--file PATH` | Select one UTF-8 text file | Bundled `sample.txt` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
 | `--trace PATH` | Save full requests, responses, and events as JSONL | No trace file |

@@ -1,19 +1,27 @@
 # Running Baby Anigans
 
-Start with the [walkthrough](../README.md) to learn the loop. This page collects setup choices and implementation limits.
+Setup, flags, limits, and tests. The [README](../README.md) explains why the project exists. This page is written so that a person or a coding agent can follow it without further context.
+
+## Setup
+
+Requires Python 3.10+ and [Ollama](https://ollama.com/download). No Ollama account is needed.
+
+```sh
+git clone git@github.com:agency-with-ai/baby-anigans.git
+cd baby-anigans
+python3 -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+ollama pull qwen3:1.7b
+python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
+```
+
+If Ollama is not already running, start `ollama serve` in another terminal. Each `--trace` filename must be new; the program refuses to overwrite.
 
 ## Model options
 
 ### Small local model
 
-Install [Ollama](https://ollama.com/download), start it, and download the model:
-
-```sh
-ollama pull qwen3:1.7b
-python agent.py "What should happen if the feed is unavailable?"
-```
-
-This is the default model when `--model` is omitted. The download is about 1.4 GB. Ollama reported 2.4 GB loaded on our M4 Max Studio at the configured 8K context. Allow extra memory for the OS and other applications. We have not measured student-laptop performance.
+`qwen3:1.7b` is the default when `--model` is omitted. The download is about 1.4 GB. Ollama reported 2.4 GB loaded on our M4 Max Studio at the configured 8K context. Allow extra memory for the OS and other applications. We have not measured student-laptop performance.
 
 This is a toy model for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks. Completing one question does not establish reliability on others.
 

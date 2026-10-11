@@ -1,6 +1,8 @@
-# Tiny Agent
+# Baby Anigans
 
-A small agent that answers questions about one local text file using Ollama. It searches the file, reads surrounding lines, and is instructed to cite the supporting line numbers.
+**A tiny research assistant you can read end to end.**
+
+A local-file Q&A agent for learning how models, tools, context, and a harness fit together. It uses Ollama to search a file, read surrounding lines, and answer with supporting line citations.
 
 Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The point is to see the machinery: no agent framework, embeddings, or vector database.
 
@@ -9,8 +11,9 @@ Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The point is t
 You need Python 3.10+, [Ollama](https://ollama.com/download), and a model that supports tool calling. No Ollama account is needed for local inference with public models.
 
 ```sh
-git clone https://github.com/agency-with-ai/tiny-agent.git
-cd tiny-agent
+# Repository access is required while this repo is private.
+git clone git@github.com:agency-with-ai/baby-anigans.git
+cd baby-anigans
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

@@ -2,13 +2,15 @@
 
 **A tiny research assistant you can read end to end.**
 
-A local-file Q&A agent for learning how models, tools, context, and a harness fit together. It uses Ollama to search a file, read surrounding lines, and answer with supporting line citations.
+Ask a question about a local file. Baby Anigans searches it, reads nearby lines, and answers with citations. The interesting part is what happens between the question and the answer: a model requests actions, and a short Python program carries them out.
 
-Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The point is to see the machinery: no agent framework, embeddings, or vector database.
+By the end of this walkthrough, you should be able to point to the **model**, **tools**, **context**, and **harness** in a running agent.
 
-## Setup
+Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950.
 
-You need Python 3.10+, [Ollama](https://ollama.com/download), and a model that supports tool calling. No Ollama account is needed for local inference with public models.
+## 1. Give it a question
+
+You need Python 3.10+ and [Ollama](https://ollama.com/download) running. These commands use a small local model, with a roughly 1.4 GB download. No Ollama account is needed.
 
 ```sh
 # Repository access is required while this repo is private.
@@ -16,105 +18,154 @@ git clone git@github.com:agency-with-ai/baby-anigans.git
 cd baby-anigans
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-ollama pull qwen3:8b
-```
-
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1` instead. Make sure Ollama is running; on installations without a background service, start `ollama serve` in another terminal.
-
-Qwen3 8B is the configurable default. Local smoke tests exercise the loop, but it still misses evidence and instructions; it is not a reliable classroom baseline yet. Its download is about 5 GB and inference needs additional memory. A smaller tool-capable model may run on lighter hardware but make more mistakes. Select another installed model with `--model`.
-
-## Local toy or larger model
-
-The same harness can use a smaller local model:
-
-```sh
+python -m pip install -r requirements.txt
 ollama pull qwen3:1.7b
-python agent.py "What should happen if the feed is unavailable?" --model qwen3:1.7b
+
+python agent.py "What should happen if the feed is unavailable?" \
+  --model qwen3:1.7b --trace first-run.jsonl
 ```
 
-Qwen3 1.7B downloads about 1.4 GB. On an M4 Max Studio, Ollama reported 2.4 GB loaded with our 8K context configuration. Allow additional RAM for the OS and applications; student-laptop performance has not been measured.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Ollama is not running in the background, run `ollama serve` in another terminal. For a larger model or a remote endpoint, see [setup options](docs/reference.md#model-options).
 
-This is a **toy model for seeing the loop run**, not a reliable answerer. In three local runs of the feed question it searched, read neighboring lines, and cited L25 correctly after harness corrections. It failed to find the screened-entry exception with its chosen searches, and hit the step cap on the deployment question because it repeatedly cited unseen lines. The absent-budget question produced the harness's qualified abstention. The model and task were not changed to hide these failures.
+The question is about the fictional project described in [spec.txt](spec.txt). Open that file beside the answer. Does the cited line say what the answer claims?
 
-For a larger local model, use `--model qwen3:8b`. For a course-provided remote endpoint, use `--host URL --model MODEL`; students then need Python and this client package, not the Ollama application or a model download. No course endpoint is configured yet. Any endpoint requiring authentication also needs client credential configuration, which this CLI does not yet expose.
+The small model can make mistakes or reach the step limit. Keep its output: a failed run can still show us exactly how the system works.
 
-## Ask a question
+## 2. Follow a search into the code
+
+Look for a `[tool]` event in the terminal. A search request might look like:
+
+```text
+name: search
+arguments: {"query": "feed unavailable"}
+```
+
+**The model has requested a search. It has not searched your disk.**
+
+Open [agent.py](agent.py) and find these three pieces:
+
+1. **`TOOLS`** describes `search` and its arguments. This is the interface sent to the model: a *tool schema*.
+2. **`FileTools.dispatch`** receives the requested name and arguments and chooses an allowed Python function.
+3. **`FileTools.search`** performs the search and returns numbered matches.
+
+For this query, the tool returns:
+
+```text
+25: If the feed is unavailable, report the failure and write no shortlist.
+```
+
+The line number comes from Python, not from the model counting lines. Search is ordinary text matching: all query terms must occur on the same line, in any order. There is no embedding model or vector database.
+
+**Before moving on:** where would you change what “search” means—the tool description, the Python function, or both?
+
+## 3. Find out how the model sees the result
+
+Find `run_agent`. Follow the `messages` list through one iteration:
+
+```text
+Question and instructions
+          ↓
+       Model call
+          ↓
+   Requested tool action
+          ↓
+  Python executes the tool
+          ↓
+ Result appended to messages
+          ↓
+     Next model call
+```
+
+The returned line becomes a **tool-result message**. That is how it reaches the model on the next call. The model can then request more information or propose an answer.
+
+Open `first-run.jsonl` in your editor. Find the first two `request` records and compare their `messages`. The later request includes information the earlier one did not have. This growing input is the model's **context** for the run.
+
+The file existed before either call. But the model did not receive its contents until a tool returned them. **Stored on disk, accessible through a tool, and present in context are different things.**
+
+If you repeat the command, choose a new trace filename; the program will not overwrite an existing trace.
+
+## 4. Why read after searching?
+
+Now ask:
 
 ```sh
-python agent.py "What should happen if the feed is unavailable?" --trace run.jsonl
+python agent.py "Are all screened entries marked read?" --model qwen3:1.7b
 ```
 
-By default, the agent uses the included fictional `spec.txt`. To use your own UTF-8 text file:
+The source contains a rule and an exception:
+
+```text
+29: After a successful sweep, mark screened entries read.
+30: Exception: leave borderline entries unread until the instructor reviews them.
+```
+
+A search can return line 29 without line 30. An answer based only on the match can therefore miss the exception.
+
+The second tool, **`read_lines(start, end)`**, lets the model ask for surrounding text. Find its schema and implementation. Then inspect the run:
+
+- Which words did the model search for?
+- Did it retrieve the rule? The exception?
+- If the answer was wrong or missing, was the evidence absent from the context, or mishandled after it arrived?
+
+The small model sometimes includes “all” in its search and finds neither line. That is a poor query for this search function, not evidence that the file lacks an answer.
+
+## 5. Where is the harness?
+
+You may also have seen `[check]` events:
+
+```text
+Search the file before answering.
+Read neighboring lines too, not only the match.
+Cite the retrieved evidence using [L25] or [L25-L26].
+```
+
+These are **not model thoughts**. They come from checks in `run_agent`. When a proposed answer fails a check, Python appends corrective feedback and calls the model again, within a fixed call budget.
+
+This surrounding program is the **harness**. It constructs context, dispatches actions, returns observations, checks the proposed answer's form, and decides whether to continue or stop. Ollama is the **model server**; it supplies the model responses. The model server and the harness are separate programs.
+
+Contrast two lines of defense in `agent.py`:
+
+- `SYSTEM` asks the model to cite evidence.
+- Python checks that citations refer to lines the tools returned.
+
+The first is an instruction. The second enforces a limited property. **Neither proves that the cited passage supports the conclusion.**
+
+For a short file like this one, putting the entire numbered file into one prompt might be simpler. We use tools here to expose how an agent obtains information over several calls.
+
+## 6. Change one component
+
+Choose a comparison, predict what will change, then inspect the trace.
+
+**Keep the harness; change the model.**
 
 ```sh
-python agent.py "Your question" --file /path/to/document.txt
+ollama pull qwen3:8b
+python agent.py "Are all screened entries marked read?" --model qwen3:8b
 ```
 
-The terminal shows executed tool requests, results, the stopping reason, and the final answer. `--trace` saves complete model requests and responses as JSONL, including tool definitions and returned text. It refuses to overwrite an existing file; choose a new name for another run.
+This model needs more memory. Does it choose different searches? Need fewer corrections? Include the exception?
 
-Other questions to try:
+**Keep the model; remove a tool.**
 
 ```sh
-python agent.py "Are all screened entries marked read?"
-python agent.py "What exact deployment machine has been selected?"
-python agent.py "Are all screened entries marked read?" --search-only
+python agent.py "Are all screened entries marked read?" \
+  --model qwen3:1.7b --search-only
 ```
 
-`--search-only` disables the surrounding-line reader in both the tool definitions and the dispatcher. It need not make the answer wrong: the model may find the same information through another search.
+This removes `read_lines` and the requirement to use it. The model might still find the exception through another search; removing the reader does not guarantee failure.
 
-## Where is the harness?
-
-Open `agent.py`:
-
-- **`TOOLS`** describes the two tool interfaces to the model.
-- **`FileTools`** implements case-insensitive all-query-terms search and inclusive, numbered line reads over a fixed file snapshot.
-- **`dispatch`** validates the requested tool and arguments, then calls the Python function. A model request does not execute itself.
-- **`run_agent`** is the loop: assemble messages → call the model → execute requested tools → append their results → call the model again.
-- **`main`** connects the client, command-line options, and trace output.
-
-Ollama serves the model. Python runs the harness and tools. The model does not see the whole file automatically: it receives the excerpts returned by tool calls. For a short file, putting the entire numbered file in one prompt may be simpler; this example exists to expose the retrieval loop.
-
-## Model responses are not guarantees
-
-The harness rejects a final answer before a search, asks for another keyword after a first empty search, and requires reading a matched line with its immediate neighbors (unless `--search-only`). When evidence was returned, it requires at least one citation and checks that every recognized citation refers to returned lines. Corrections appear as `[check]` events and consume the same bounded call budget. After two distinct searches with no returned lines, the harness supplies a fixed, qualified abstention rather than accepting invented content.
-
-These checks enforce a small retrieval procedure, not correctness. They do not establish that each claim has a citation, that the cited passage supports it, or that all relevant evidence was found. Reading immediate neighbors does not guarantee sufficient context. Check the answer against the source.
-
-Before these checks were added, local Qwen3 8B tests found premature answers after an unsuccessful literal search and a missed exception immediately after a matching line. An explicit request to search for `screened` and use `read_lines` retrieved the exception and produced a cited answer. Enabling `--think` did not consistently fix the problems. After the checks and all-query-terms search were added, the original feed-failure, read-status, and deployment questions returned correct cited answers in local smoke runs. The read-status answer included the exception. These are smoke tests, not a reliability benchmark.
-
-An initial live test with `gpt-oss:20b` retrieved the relevant passage and answered correctly but omitted citations. A `llama3.2` run misinterpreted a tool error as document evidence. Those are individual observations, not model benchmarks. Rehearse your chosen model on your questions.
-
-`--max-steps` caps model calls (default 8). Each response can request at most eight tools. Invalid calls return errors to the model. Output truncation and reaching the step cap stop the run without presenting it as completed. Calls have a 120-second client timeout. The request uses an 8,192-token context, a 1,024-token output limit, and `think=False` by default. Use `--think` to compare with thinking enabled; support and behavior can vary by model.
-
-This simple version has no context compaction, network retries, semantic citation verifier, or service authentication.
-
-## Local tools, local or remote inference
+**Keep both; change the evidence.**
 
 ```sh
-python agent.py "Your question" --host http://localhost:11434 --model qwen3:8b
+python agent.py "Your question" --model qwen3:1.7b --file /path/to/your-notes.txt
 ```
 
-Changing `--host` changes the model server, not where the file tools run. With remote inference, your question and retrieved excerpts leave your machine. Trace files also contain those excerpts. Do not use sensitive files unless the deployment is appropriate for them.
+Use a nonsensitive UTF-8 text file and a question whose answer you can check. Then ask something the file does not answer. Does the agent distinguish finding no evidence from establishing that no answer exists?
 
-The model cannot select arbitrary paths or request shell commands through these tools. The operator selects one file, read once at startup. This is not an OS sandbox: the Python process still has your permissions. Do not expose a raw, unauthenticated Ollama endpoint publicly.
+## Next
 
-To keep the demo bounded, files may contain at most 200,000 characters and lines at most 1,000 characters. Search returns up to 12 matches; the reader returns up to 20 lines per call. Growing history can still exceed the context window.
+- [Reference](docs/reference.md): hardware, remote inference, options, limits, and tests.
+- [Source](agent.py): the entire application, without an agent framework.
+- [Tests](test_agent.py): checks of the harness using fake model responses, not an assessment of model quality.
 
-## Test without a model
-
-```sh
-python3 -m unittest discover -s . -v
-```
-
-The tests use fake model responses to check tool behavior, message flow, and stopping rules. They require only the Python standard library, not a running model. They test the harness, not model quality.
-
-## References
-
-- [Ollama Python client](https://github.com/ollama/ollama-python)
-- [Ollama tool calling](https://docs.ollama.com/capabilities/tool-calling)
-- [Qwen3 8B](https://ollama.com/library/qwen3:8b)
-
-## License
-
-[MIT](LICENSE).
+[MIT license](LICENSE).

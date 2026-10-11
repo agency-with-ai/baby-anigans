@@ -10,10 +10,10 @@ Install [Ollama](https://ollama.com/download), start it, and download the model:
 
 ```sh
 ollama pull qwen3:1.7b
-python agent.py "What should happen if the feed is unavailable?" --model qwen3:1.7b
+python agent.py "What should happen if the feed is unavailable?"
 ```
 
-The download is about 1.4 GB. Ollama reported 2.4 GB loaded on our M4 Max Studio at the configured 8K context. Allow extra memory for the OS and other applications. We have not measured student-laptop performance.
+This is the default model when `--model` is omitted. The download is about 1.4 GB. Ollama reported 2.4 GB loaded on our M4 Max Studio at the configured 8K context. Allow extra memory for the OS and other applications. We have not measured student-laptop performance.
 
 This is a toy model for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks. Completing one question does not establish reliability on others.
 
@@ -24,7 +24,7 @@ ollama pull qwen3:8b
 python agent.py "Are all screened entries marked read?" --model qwen3:8b
 ```
 
-This is the code's default model when `--model` is omitted. The download is about 5.2 GB; Ollama reported 6.6 GB loaded on the Studio. A 16 GB laptop is a reasonable planning target, not a tested minimum. Local smoke runs answered the feed-failure, exception, and deployment questions with citations under the current harness; correctness is not guaranteed.
+Select this larger model explicitly with `--model qwen3:8b`. The download is about 5.2 GB; Ollama reported 6.6 GB loaded on the Studio. A 16 GB laptop is a reasonable planning target, not a tested minimum. Local smoke runs answered the feed-failure, exception, and deployment questions with citations under the current harness; correctness is not guaranteed.
 
 Local inference needs no Ollama account and can run offline after installation and model download.
 
@@ -53,7 +53,7 @@ Run `python agent.py --help` for the full interface.
 | Option | Purpose | Default |
 |---|---|---|
 | `--file PATH` | Select one UTF-8 text file | Bundled `spec.txt` |
-| `--model NAME` | Select an installed model | `qwen3:8b` |
+| `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
 | `--trace PATH` | Save full requests, responses, and events as JSONL | No trace file |
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |

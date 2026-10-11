@@ -22,7 +22,7 @@ python -m pip install -r requirements.txt
 ollama pull qwen3:1.7b
 
 python agent.py "What should happen if the feed is unavailable?" \
-  --model qwen3:1.7b --trace first-run.jsonl
+  --trace first-run.jsonl
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Ollama is not running in the background, run `ollama serve` in another terminal. For a larger model or a remote endpoint, see [setup options](docs/reference.md#model-options).
@@ -89,7 +89,7 @@ If you repeat the command, choose a new trace filename; the program will not ove
 Now ask:
 
 ```sh
-python agent.py "Are all screened entries marked read?" --model qwen3:1.7b
+python agent.py "Are all screened entries marked read?"
 ```
 
 The source contains a rule and an exception:
@@ -149,7 +149,7 @@ This model needs more memory. Does it choose different searches? Need fewer corr
 
 ```sh
 python agent.py "Are all screened entries marked read?" \
-  --model qwen3:1.7b --search-only
+  --search-only
 ```
 
 This removes `read_lines` and the requirement to use it. The model might still find the exception through another search; removing the reader does not guarantee failure.
@@ -157,7 +157,7 @@ This removes `read_lines` and the requirement to use it. The model might still f
 **Keep both; change the evidence.**
 
 ```sh
-python agent.py "Your question" --model qwen3:1.7b --file /path/to/your-notes.txt
+python agent.py "Your question" --file /path/to/your-notes.txt
 ```
 
 Use a nonsensitive UTF-8 text file and a question whose answer you can check. Then ask something the file does not answer. Does the agent distinguish finding no evidence from establishing that no answer exists?

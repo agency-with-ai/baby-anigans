@@ -180,7 +180,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("question")
     parser.add_argument("--file", type=Path, default=Path(__file__).with_name("spec.txt"))
-    parser.add_argument("--model", default="qwen3:8b")
+    parser.add_argument("--model", default="qwen3:1.7b", help="Model name (default: qwen3:1.7b)")
     parser.add_argument("--host", default="http://localhost:11434")
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--search-only", action="store_true")

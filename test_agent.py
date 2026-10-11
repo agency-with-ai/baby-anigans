@@ -37,13 +37,14 @@ class AgentTests(unittest.TestCase):
         self.events.append((event, copy.deepcopy(data)))
 
     def test_search_returns_actual_line_numbers(self):
-        result = self.files.search("UNAVAILABLE")
+        result, numbers = self.files.search("UNAVAILABLE")
         self.assertEqual(result["total_matches"], 1)
         number, text = result["lines"].split(": ", 1)
         self.assertEqual(self.files.lines[int(number) - 1], text)
+        self.assertEqual(numbers, {int(number)})
 
     def test_search_matches_terms_in_any_order(self):
-        self.assertIn("25:", self.files.search("unavailable feed")["lines"])
+        self.assertIn("25:", self.files.search("unavailable feed")[0]["lines"])
 
     def test_rejects_unseen_or_missing_citations(self):
         for answer in ("Failure.", "Failure. [L999]", "Failure. [L24-L25]"):
@@ -74,10 +75,10 @@ class AgentTests(unittest.TestCase):
         self.assertNotIn("Invented", answer)
 
     def test_no_match(self):
-        self.assertEqual(self.files.search("xyzzy")["total_matches"], 0)
+        self.assertEqual(self.files.search("xyzzy")[0]["total_matches"], 0)
 
     def test_inclusive_read(self):
-        self.assertEqual(self.files.read_lines(1, 2)["lines"], "1: Feed shortlist project\n2: ")
+        self.assertEqual(self.files.read_lines(1, 2), ({"lines": "1: Feed shortlist project\n2: "}, {1, 2}))
 
     def test_invalid_calls_are_errors(self):
         for name, args in [("shell", {}), ("search", {"query": ""}),
@@ -86,7 +87,7 @@ class AgentTests(unittest.TestCase):
                            ("read_lines", {"start": True, "end": 3}),
                            ("read_lines", {"start": 1, "end": 21})]:
             with self.subTest(name=name, args=args):
-                self.assertIn("error", self.files.dispatch(name, args))
+                self.assertIn("error", self.files.dispatch(name, args)[0])
 
     def test_tool_result_reaches_next_call(self):
         client = FakeClient([call("search", {"query": "unavailable"}),

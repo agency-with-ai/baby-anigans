@@ -2,116 +2,96 @@
 
 **A tiny research assistant you can read end to end.**
 
-Ask a question about a local file. Baby Anigans searches it, reads nearby lines, and answers with citations. The interesting part is what happens between the question and the answer: a model requests actions, and a short Python program carries them out.
+Ask a question about a local text file. Baby Anigans searches it, reads nearby lines, and answers with line citations. The point is what happens in between: a model requests actions, and a short Python program carries them out. By the end you should be able to point to the **model**, **tools**, **context**, and **harness** in a running agent.
 
-By the end of this walkthrough, you should be able to point to the **model**, **tools**, **context**, and **harness** in a running agent.
+Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The [project spec](project-spec.md) describes Baby Anigans itself; `spec.txt` is fictional source material for it to read.
 
-Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The [project spec](project-spec.md) follows Lab 3's questions about scope, a one-day version, and how to judge a result. It describes Baby Anigans itself; `spec.txt` is fictional source material for the assistant to read.
+## 1. Run it
 
-## 1. Give it a question
-
-You need Python 3.10+ and [Ollama](https://ollama.com/download) running. These commands use a small local model, with a roughly 1.4 GB download. No Ollama account is needed.
+Requires Python 3.10+ and [Ollama](https://ollama.com/download). The default model is a 1.4 GB download; no Ollama account is needed.
 
 ```sh
-# Repository access is required while this repo is private.
 git clone git@github.com:agency-with-ai/baby-anigans.git
 cd baby-anigans
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ollama pull qwen3:1.7b
 
-python agent.py "What should happen if the feed is unavailable?" \
-  --trace first-run.jsonl
+python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
 ```
 
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Ollama is not running in the background, run `ollama serve` in another terminal. For a larger model or a remote endpoint, see [setup options](docs/reference.md#model-options).
+If Ollama is not already running, start `ollama serve` in another terminal. Other models and remote endpoints: [reference](docs/reference.md#model-options).
 
-The question is about the fictional project described in [spec.txt](spec.txt). Open that file beside the answer. Does the cited line say what the answer claims?
-
-The small model can make mistakes or reach the step limit. Keep its output: a failed run can still show us exactly how the system works.
+Open [spec.txt](spec.txt) beside the answer. Does the cited line say what the answer claims? The small model can fail or hit the step limit. Keep the output anyway; a failed run shows the mechanism just as well.
 
 ## 2. Follow a search into the code
 
-Look for a `[tool]` event in the terminal. A search request might look like:
+Find a `[tool]` event in the terminal, for example:
 
 ```text
 name: search
 arguments: {"query": "feed unavailable"}
 ```
 
-**The model has requested a search. It has not searched your disk.**
+**The model requested a search. It did not search your disk.** In [agent.py](agent.py):
 
-Open [agent.py](agent.py) and find these three pieces:
-
-1. **`TOOLS`** describes `search` and its arguments. This is the interface sent to the model: a *tool schema*.
-2. **`FileTools.dispatch`** receives the requested name and arguments and chooses an allowed Python function.
-3. **`FileTools.search`** performs the search and returns numbered matches.
-
-For this query, the tool returns:
+1. `TOOLS` describes `search` and its arguments. This schema is what the model sees.
+2. `FileTools.dispatch` maps the requested name to an allowed Python function.
+3. `FileTools.search` does the matching and returns numbered lines:
 
 ```text
 25: If the feed is unavailable, report the failure and write no shortlist.
 ```
 
-The line number comes from Python, not from the model counting lines. Search is ordinary text matching: all query terms must occur on the same line, in any order. There is no embedding model or vector database.
+The line number comes from Python, not from the model. Search is plain substring matching: every query term must occur on the same line. There is no embedding model or vector database.
 
-**Before moving on:** where would you change what “search” means—the tool description, the Python function, or both?
+**Before moving on:** to change what "search" means, would you edit the tool description, the Python function, or both?
 
-## 3. Find out how the model sees the result
+## 3. How the model sees the result
 
-Find `run_agent`. Follow the `messages` list through one iteration:
+`run_agent` repeats one loop until an answer passes the checks or the step budget runs out:
 
-```text
-Question and instructions
-          ↓
-       Model call
-          ↓
-   Requested tool action
-          ↓
-  Python executes the tool
-          ↓
- Result appended to messages
-          ↓
-     Next model call
+```mermaid
+flowchart TD
+    Q[Question + SYSTEM prompt<br/>as messages] --> M
+    M[Model call<br/>Ollama model server] --> C{Response}
+    C -->|tool request| D[FileTools.dispatch]
+    D -->|numbered lines| R[Tool result appended<br/>to messages]
+    R --> M
+    C -->|proposed answer| K[Evidence.check]
+    K -->|fails| F[Feedback appended<br/>to messages]
+    F --> M
+    K -->|passes| A[Answer]
 ```
 
-The returned line becomes a **tool-result message**. That is how it reaches the model on the next call. The model can then request more information or propose an answer.
+Everything outside the model box is the Python program in `agent.py`.
 
-Open `first-run.jsonl` in your editor. Find the first two `request` records and compare their `messages`. The later request includes information the earlier one did not have. This growing input is the model's **context** for the run.
+The returned line becomes a **tool-result message**. That is the only way file text reaches the model. Open `first-run.jsonl` and compare the `messages` of the first two `request` records: the later one contains what the tool returned. This growing input is the model's **context**.
 
-The file existed before either call. But the model did not receive its contents until a tool returned them. **Stored on disk, accessible through a tool, and present in context are different things.**
+The file existed on disk the whole time, but the model saw nothing until a tool returned it. **On disk, reachable through a tool, and present in context are three different things.**
 
-If you repeat the command, choose a new trace filename; the program will not overwrite an existing trace.
+Traces are never overwritten; pick a new filename for each run.
 
 ## 4. Why read after searching?
-
-Now ask:
 
 ```sh
 python agent.py "Are all screened entries marked read?"
 ```
 
-The source contains a rule and an exception:
+The source has a rule and an exception on the next line:
 
 ```text
 29: After a successful sweep, mark screened entries read.
 30: Exception: leave borderline entries unread until the instructor reviews them.
 ```
 
-A search can return line 29 without line 30. An answer based only on the match can therefore miss the exception.
+A search can return line 29 alone. The second tool, `read_lines(start, end)`, lets the model fetch the surrounding text. Inspect the run: which words did the model search for? Did it retrieve the rule, the exception, both? If the answer was wrong, was the evidence missing from context, or mishandled after it arrived?
 
-The second tool, **`read_lines(start, end)`**, lets the model ask for surrounding text. Find its schema and implementation. Then inspect the run:
-
-- Which words did the model search for?
-- Did it retrieve the rule? The exception?
-- If the answer was wrong or missing, was the evidence absent from the context, or mishandled after it arrived?
-
-The small model sometimes includes “all” in its search and finds neither line. That is a poor query for this search function, not evidence that the file lacks an answer.
+The small model sometimes searches for "all" and finds nothing. That is a poor query, not proof the file lacks an answer.
 
 ## 5. Where is the harness?
 
-You may also have seen `[check]` events:
+You may also see `[check]` events:
 
 ```text
 Search the file before answering.
@@ -119,53 +99,25 @@ Read neighboring lines too, not only the match.
 Cite the retrieved evidence using [L25] or [L25-L26].
 ```
 
-These are **not model thoughts**. They come from checks in `run_agent`. When a proposed answer fails a check, Python appends corrective feedback and calls the model again, within a fixed call budget.
+These are **not model output**. They come from `Evidence.check` in `agent.py`. When a proposed answer fails a check, Python appends the feedback and calls the model again, within a fixed call budget.
 
-This surrounding program is the **harness**. It constructs context, dispatches actions, returns observations, checks the proposed answer's form, and decides whether to continue or stop. Ollama is the **model server**; it supplies the model responses. The model server and the harness are separate programs.
+This surrounding program is the **harness**: it builds context, dispatches actions, returns observations, checks the answer's form, and decides whether to continue or stop. Ollama is the **model server**, a separate program.
 
-Contrast two lines of defense in `agent.py`:
+Two lines of defense: `SYSTEM` asks the model to cite evidence, and Python checks that citations point to lines the tools returned. The first is an instruction; the second enforces a narrow property. **Neither proves the cited passage supports the claim.**
 
-- `SYSTEM` asks the model to cite evidence.
-- Python checks that citations refer to lines the tools returned.
-
-The first is an instruction. The second enforces a limited property. **Neither proves that the cited passage supports the conclusion.**
-
-For a short file like this one, putting the entire numbered file into one prompt might be simpler. We use tools here to expose how an agent obtains information over several calls.
+For a file this short, pasting the whole numbered file into one prompt would be simpler. Tools are used here to expose how an agent gathers information over several calls.
 
 ## 6. Change one component
 
-Choose a comparison, predict what will change, then inspect the trace.
+Predict what will change, then check the trace.
 
-**Keep the harness; change the model.**
+- **Change the model:** `ollama pull qwen3:8b`, then add `--model qwen3:8b`. Different searches? Fewer corrections? Does it keep the exception?
+- **Remove a tool:** add `--search-only`. This drops `read_lines` and its check. The model may still find the exception by searching again.
+- **Change the evidence:** add `--file /path/to/your-notes.txt` with a question you can verify. Then ask something the file does not answer. Does the agent distinguish "found nothing" from "no answer exists"?
 
-```sh
-ollama pull qwen3:8b
-python agent.py "Are all screened entries marked read?" --model qwen3:8b
-```
+## More
 
-This model needs more memory. Does it choose different searches? Need fewer corrections? Include the exception?
-
-**Keep the model; remove a tool.**
-
-```sh
-python agent.py "Are all screened entries marked read?" \
-  --search-only
-```
-
-This removes `read_lines` and the requirement to use it. The model might still find the exception through another search; removing the reader does not guarantee failure.
-
-**Keep both; change the evidence.**
-
-```sh
-python agent.py "Your question" --file /path/to/your-notes.txt
-```
-
-Use a nonsensitive UTF-8 text file and a question whose answer you can check. Then ask something the file does not answer. Does the agent distinguish finding no evidence from establishing that no answer exists?
-
-## Next
-
-- [Reference](docs/reference.md): hardware, remote inference, options, limits, and tests.
-- [Source](agent.py): the entire application, without an agent framework.
-- [Tests](test_agent.py): checks of the harness using fake model responses, not an assessment of model quality.
+- [Reference](docs/reference.md): hardware, remote inference, options, limits, tests.
+- [Tests](test_agent.py): harness checks using fake model responses, no Ollama required.
 
 [MIT license](LICENSE).

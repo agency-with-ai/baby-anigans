@@ -6,7 +6,7 @@ Ask a question about a local file. Baby Anigans searches it, reads nearby lines,
 
 By the end of this walkthrough, you should be able to point to the **model**, **tools**, **context**, and **harness** in a running agent.
 
-Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950.
+Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The [project spec](project-spec.md) follows Lab 3's questions about scope, a one-day version, and how to judge a result. It describes Baby Anigans itself; `spec.txt` is fictional source material for the assistant to read.
 
 ## 1. Give it a question
 

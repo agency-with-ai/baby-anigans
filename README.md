@@ -6,7 +6,7 @@ An agent small enough to understand completely. One Python file, two tools, no f
 
 You will spend years working alongside agents: coding assistants, research tools, things that book travel and triage inboxes. All of them are the same loop. A model asks for an action, a program performs it, the result is pasted into the model's input, and the model is called again. That loop decides what the agent can see, what it can do, and what stops it. Products hide it. Frameworks abstract it. Most people who use agents every day have never watched one turn of it.
 
-Baby Anigans is one turn of that loop, repeated, with nothing hidden. After an afternoon with it you should be able to answer, about any agent you meet:
+Baby Anigans is that loop with nothing hidden. After an afternoon with it you should be able to answer, about any agent you meet:
 
 - What can it actually see right now, as opposed to what exists on disk or on the web?
 - When it "searched", who searched, and what did the search really do?
@@ -15,28 +15,44 @@ Baby Anigans is one turn of that loop, repeated, with nothing hidden. After an a
 
 Those questions are the difference between using an agent and being used by one.
 
-## What it looks like
+## What one run looks like
 
-The agent answers one question about one text file and must cite line numbers. Here is a real run with a small local model, trimmed. Lines marked `tool` and `check` were written by Python, not the model.
+Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools, checks answers, and decides when to stop.
+
+The agent answers one question about one text file and must cite line numbers. Below is a real run with a small local model, lightly trimmed. Every line not labeled *Model* was produced by Python.
 
 ```text
-user       What should happen if the feed is unavailable?
-assistant  I could not find any evidence regarding what should happen...
-check      Search the file before answering.
-assistant  → search {"query": "feed unavailable"}
-tool       25: If the feed is unavailable, report the failure and write no shortlist.
-assistant  The evidence indicates that if the feed is unavailable, the system should report...
-check      Read neighboring lines too, not only the match. Call read_lines(start=24, end=26).
-assistant  → read_lines {"start": 24, "end": 26}
-tool       24: Failure behavior
-           25: If the feed is unavailable, report the failure and write no shortlist.
-           26: A failed run must not mark any entries read.
-assistant  The lines retrieved show that line 24 mentions "Failure behavior", line 25...
-check      Cite the retrieved evidence using [L25] or [L25-L26].
-assistant  If the feed is unavailable, report the failure and write no shortlist. [L25]
+ 1  You      What should happen if the feed is unavailable?
+
+ 2  Model    I could not find any evidence regarding what should happen...
+    Harness  Search the file before answering.
+
+ 3  Model    search(query="feed unavailable")
+    Tool     25: If the feed is unavailable, report the failure and write no shortlist.
+
+ 4  Model    The evidence indicates that the system should report the failure...
+    Harness  Read neighboring lines too, not only the match. Call read_lines(24, 26).
+
+ 5  Model    read_lines(start=24, end=26)
+    Tool     24: Failure behavior
+             25: If the feed is unavailable, report the failure and write no shortlist.
+             26: A failed run must not mark any entries read.
+
+ 6  Model    Line 24 mentions "Failure behavior", line 25 states...
+    Harness  Cite the retrieved evidence using [L25] or [L25-L26].
+
+ 7  Model    If the feed is unavailable, report the failure and write no shortlist. [L25]
+    Harness  Accepted.
 ```
 
-Read it top to bottom. The model's first move was to answer from nothing. Three times a proposed answer was bounced back by a rule in Python, and each bounce was appended to the conversation as if a user had typed it. The file was on disk the whole time, but the model saw line 25 only after a tool returned it. Every one of those facts is visible in the saved trace, and every rule that produced a `check` line is a few lines of code you can read and change.
+What to notice:
+
+- **Step 2.** The model's first move was to answer without looking. The harness refused and appended its refusal to the conversation, where the model reads it as if a user had typed it.
+- **Step 3.** The model did not search anything. It asked for a search by name, and a Python function ran it. The line number comes from Python.
+- **Steps 4 and 6.** Two more answers bounced. Each bounce is a few lines of code you can read, and the budget of bounces is a number you can change.
+- **Step 7.** The accepted answer cites a line the tools really returned. Nothing has checked that line 25 actually supports the claim. That is your job.
+
+The file was on disk the whole time. The model saw line 25 only after step 3, and lines 24 and 26 only after step 5. The full record of every step, including the exact input the model received each time, is in the trace file.
 
 ## Where the pieces are
 

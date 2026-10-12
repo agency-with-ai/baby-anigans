@@ -59,7 +59,7 @@ The checks are narrow on purpose. Python can verify that the model searched, rea
 
 Each takes a minute and the trace shows what changed.
 
-- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/156f42ee4d974fa463c84af09b4a975b67e6f87d/docs/example-input.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored? One saved run: [`example/exception.jsonl`](example/exception.jsonl).
+- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/983e29ab571ada5b9bb41fc74e4a310aece913d8/example/input.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored? One saved run: [`example/exception.jsonl`](example/exception.jsonl).
 - Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/exception-search-only.jsonl`](example/exception-search-only.jsonl), where every check passed and the answer is still wrong.
 - Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections?
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?

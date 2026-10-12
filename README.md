@@ -8,7 +8,7 @@ Every agent is the same loop: a model asks for an action, a program performs it,
 
 Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools (the *Tool* lines below), checks answers (the *Check* lines), and decides when to stop.
 
-The agent answers one question about one text file and must cite line numbers. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
+The agent answers one question about one text file and must cite line numbers. The bundled [`sample.txt`](sample.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
  1  You      What should happen if the feed is unavailable?

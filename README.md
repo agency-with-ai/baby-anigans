@@ -6,7 +6,7 @@
 
 The LLM (the *Model* lines below) is served by [Ollama](https://ollama.com). The harness is the Python around it: it runs the tools (*Tool* lines), checks answers (*Check* lines), and decides when to stop.
 
-The agent answers one question about one text file and must cite line numbers. The bundled [`example-input.txt`](docs/example-input.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
+The agent answers one question about one text file and must cite line numbers. The bundled [`example/input.txt`](example/input.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
  1  You      What should happen if the feed is unavailable?
@@ -39,7 +39,7 @@ What to notice:
 - **Steps 4 and 6.** Two more answers bounced. Each bounce is a few lines of code you can read, and the budget of bounces is a number you can change.
 - **Step 7.** The accepted answer cites a line the tools really returned. Nothing has checked that line 25 actually supports the claim. That is your job.
 
-The trace file records every step, including the exact input the model received each time.
+The trace file records every step, including the exact input the model received each time. The full trace of this run is [`example/feed-failure.jsonl`](example/feed-failure.jsonl). Each `request` row holds the complete message list sent to the model at that step, so the system prompt and every tool result repeat as the conversation grows. Open it to inspect a step, not to read top to bottom.
 
 ## Where the pieces are
 
@@ -59,8 +59,8 @@ The checks are narrow on purpose. Python can verify that the model searched, rea
 
 Each takes a minute and the trace shows what changed.
 
-- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/156f42ee4d974fa463c84af09b4a975b67e6f87d/docs/example-input.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored?
-- Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it.
+- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/156f42ee4d974fa463c84af09b4a975b67e6f87d/docs/example-input.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored? One saved run: [`example/exception.jsonl`](example/exception.jsonl).
+- Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/exception-search-only.jsonl`](example/exception-search-only.jsonl), where every check passed and the answer is still wrong.
 - Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections?
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?
 

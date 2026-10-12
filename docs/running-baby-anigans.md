@@ -36,7 +36,7 @@ Run `python agent.py --help` for the full interface.
 
 | Option | Purpose | Default |
 |---|---|---|
-| `--file PATH` | Select one UTF-8 text file | Bundled `docs/example-input.txt` |
+| `--file PATH` | Select one UTF-8 text file | Bundled `example/input.txt` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
 | `--api-key TOKEN` | Bearer token for a shared server | `$OLLAMA_API_KEY` |
@@ -82,13 +82,25 @@ An accepted answer is still a claim to check against the source.
 
 There is no context compaction, retry on network errors, semantic citation check, or server authentication. A long history can exceed the context window, and temperature 0 does not guarantee identical output across machines or server versions.
 
+## Saved traces
+
+`example/` holds the input file and three complete traces, recorded 2026-10-12 with `qwen3:1.7b` on Ollama 0.35.1 at temperature 0. They are one run each, not the only possible run; a new model build can change them.
+
+| File | Command |
+|---|---|
+| `feed-failure.jsonl` | `python agent.py "What should happen if the feed is unavailable?"` |
+| `exception.jsonl` | `python agent.py "Are all screened entries marked read?"` |
+| `exception-search-only.jsonl` | `python agent.py --search-only "Are all screened entries marked read?"` |
+
+Regenerate all three after any change to the system prompt, tools, or options, with `--trace example/<name>.jsonl` after deleting the old file. A test checks that the saved traces still match the current prompt, tools, and options.
+
 ## Tests
 
 ```sh
 python -m unittest discover -s . -v
 ```
 
-The 12 tests use the standard library and fake model responses, so Ollama need not be running. They cover search semantics, line numbering, argument validation, message flow, the retrieval and citation checks, and stopping. They do not measure model quality.
+The tests use the standard library and fake model responses, so Ollama need not be running. They cover search semantics, line numbering, argument validation, message flow, the retrieval and citation checks, and stopping. They do not measure model quality.
 
 ## References
 

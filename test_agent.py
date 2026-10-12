@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
-from agent import FileTools, run_agent
+from agent import OPTIONS, SYSTEM, TOOLS, FileTools, run_agent
 
 
 class FakeClient:
@@ -30,7 +30,7 @@ def call(name, arguments):
 
 class AgentTests(unittest.TestCase):
     def setUp(self):
-        self.files = FileTools(Path(__file__).parent / "docs" / "example-input.txt")
+        self.files = FileTools(Path(__file__).parent / "example" / "input.txt")
         self.events = []
 
     def emit(self, event, data):
@@ -113,6 +113,23 @@ class AgentTests(unittest.TestCase):
         client = FakeClient([{"role": "assistant", "content": "Partial"}], reason="length")
         self.assertIsNone(run_agent(client, "fake", "Question", self.files, self.emit))
         self.assertEqual(self.events[-1][1]["reason"], "model_output_limit")
+
+
+class SavedTraceTests(unittest.TestCase):
+    """The traces in example/ must describe the code as it is now."""
+
+    def test_saved_traces_match_current_prompt_tools_and_options(self):
+        for path in sorted((Path(__file__).parent / "example").glob("*.jsonl")):
+            rows = [json.loads(line) for line in path.open(encoding="utf-8")]
+            with self.subTest(trace=path.name):
+                self.assertEqual(rows[0]["event"], "request")
+                self.assertEqual(rows[-1]["event"], "stop")
+                for row in rows:
+                    if row["event"] == "request":
+                        self.assertEqual(row["messages"][0], {"role": "system", "content": SYSTEM})
+                        self.assertEqual(row["options"], OPTIONS)
+                        names = {tool["function"]["name"] for tool in row["tools"]}
+                        self.assertTrue(names <= {tool["function"]["name"] for tool in TOOLS})
 
 
 if __name__ == "__main__":

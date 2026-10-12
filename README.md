@@ -1,12 +1,10 @@
 # Baby Anigans
 
-One Python file, two tools, no framework.
+Every agent is the same loop: an LLM asks for an action, a program performs it, the result goes back into the LLM's input, and the LLM is called again. Baby Anigans is that loop kept small enough that you can follow every turn and see how the internal mechanism works.
 
 ## The loop
 
-Every agent is the same loop: a model asks for an action, a program performs it, the result goes back into the model's input, and the model is called again. Baby Anigans is that loop kept small enough that you can follow every turn and see how the internal mechanism works.
-
-Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools (the *Tool* lines below), checks answers (the *Check* lines), and decides when to stop.
+Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the LLM inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools (the *Tool* lines below), checks answers (the *Check* lines), and decides when to stop.
 
 The agent answers one question about one text file and must cite line numbers. The bundled [`sample.txt`](sample.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 

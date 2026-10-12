@@ -56,7 +56,7 @@ The checks are narrow on purpose. Python can verify that the model searched, rea
 
 Each takes a minute and the trace shows what changed.
 
-- Ask "Are labs due in session?" The rule and its exception share [line 50](PERMALINK): due in session, unless the first checkoff is done. A search returns that whole line, so the exception is in context. Did the answer mention it? In [`example/lab-deadline.jsonl`](example/lab-deadline.jsonl) it did not.
+- Ask "Are labs due in session?" The rule and its exception share [line 50](https://github.com/agency-with-ai/baby-anigans/blob/480c3e00c2816838e9f6249a49dc473e4c95a9aa/example/input.md#L50): due in session, unless the first checkoff is done. A search returns that whole line, so the exception is in context. Did the answer mention it? In [`example/lab-deadline.jsonl`](example/lab-deadline.jsonl) it did not.
 - Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/lab-deadline-search-only.jsonl`](example/lab-deadline-search-only.jsonl).
 - Ask "What should I do if I am sick?" The file answers twice, on the info page and in more detail on the grading page. In [`example/sick.jsonl`](example/sick.jsonl) the search found both and the model read around one. Was the second answer missing from context, or present and ignored?
 - Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections? In our run it still answered "Yes, labs are due in session" without the exception.

@@ -1,21 +1,10 @@
 # Baby Anigans
 
-An agent small enough to understand completely. One Python file, two tools, no framework.
+One Python file, two tools, no framework.
 
-## Why this exists
+## The loop
 
-You will spend years working alongside agents: coding assistants, research tools, things that book travel and triage inboxes. All of them are the same loop. A model asks for an action, a program performs it, the result is pasted into the model's input, and the model is called again. That loop decides what the agent can see, what it can do, and what stops it. Products hide it. Frameworks abstract it. Most people who use agents every day have never watched one turn of it.
-
-Baby Anigans is that loop with nothing hidden. After an afternoon with it you should be able to answer, about any agent you meet:
-
-- What can it actually see right now, as opposed to what exists on disk or on the web?
-- When it "searched", who searched, and what did the search really do?
-- When it corrects itself, was that the model's idea or a rule somebody wrote in Python?
-- What is checked before the answer reaches you, and what is not checked at all?
-
-Those questions are the difference between using an agent and being used by one.
-
-## What one run looks like
+Every agent is the same loop: a model asks for an action, a program performs it, the result goes back into the model's input, and the model is called again. Baby Anigans is that loop kept small enough that you can follow every turn and see how the internal mechanism works.
 
 Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools (the *Tool* lines below), checks answers (the *Check* lines), and decides when to stop.
 
@@ -72,7 +61,7 @@ The checks are narrow on purpose. Python can verify that the model searched, rea
 
 Each takes a minute and the trace shows what changed.
 
-- Ask "Are all screened entries marked read?" The file has a rule on line 29 and an exception on line 30. A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored?
+- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/7e1142061ca57b3e45b0c7306542dca38468626c/sample.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored?
 - Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it.
 - Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections?
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?

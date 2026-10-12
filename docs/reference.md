@@ -1,10 +1,10 @@
 # Running Baby Anigans
 
-Setup, flags, limits, and tests. The [README](../README.md) explains why the project exists. This page is written so that a person or a coding agent can follow it without further context.
+Setup, models, flags, limits, and tests. The [README](../README.md) explains why the project exists. A person or a coding agent should be able to follow this page without further context.
 
 ## Setup
 
-Requires Python 3.10+ and [Ollama](https://ollama.com/download). No Ollama account is needed.
+Requires Python 3.10+ and [Ollama](https://ollama.com/download). No Ollama account is needed, and after the model download everything runs offline.
 
 ```sh
 git clone git@github.com:agency-with-ai/baby-anigans.git
@@ -15,44 +15,20 @@ ollama pull qwen3:1.7b
 python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
 ```
 
-If Ollama is not already running, start `ollama serve` in another terminal. Each `--trace` filename must be new; the program refuses to overwrite.
+If Ollama is not already running, start `ollama serve` in another terminal. `requirements.txt` pins the Python client (`ollama==0.6.3`), not the Ollama server or the model weights.
 
-## Model options
+## Models
 
-### Small local model
+| Model | Download | Memory when loaded |
+|---|---|---|
+| `qwen3:1.7b` (default) | 1.4 GB | 2.4 GB |
+| `qwen3:8b` | 5.2 GB | 6.6 GB |
 
-`qwen3:1.7b` is the default when `--model` is omitted. The download is about 1.4 GB. Ollama reported 2.4 GB loaded on our M4 Max Studio at the configured 8K context. Allow extra memory for the OS and other applications. We have not measured student-laptop performance.
+Memory is what Ollama reported on our M4 Max Studio at the configured 8K context; allow extra for the OS and other applications. We have not measured student laptops. A 16 GB laptop is a planning target for the larger model, not a tested minimum.
 
-This is a toy model for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks. Completing one question does not establish reliability on others.
+The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the feed-failure, exception, and deployment questions with citations in local smoke runs; correctness is still not guaranteed.
 
-### Larger local model
-
-```sh
-ollama pull qwen3:8b
-python agent.py "Are all screened entries marked read?" --model qwen3:8b
-```
-
-Select this larger model explicitly with `--model qwen3:8b`. The download is about 5.2 GB; Ollama reported 6.6 GB loaded on the Studio. A 16 GB laptop is a reasonable planning target, not a tested minimum. Local smoke runs answered the feed-failure, exception, and deployment questions with citations under the current harness; correctness is not guaranteed.
-
-Local inference needs no Ollama account and can run offline after installation and model download.
-
-### Remote inference
-
-```sh
-python agent.py "Your question" --host https://YOUR-ENDPOINT --model MODEL
-```
-
-Students need Python and the Python client, but not the Ollama application or a downloaded model. The harness and file tools still run on the laptop. Questions and retrieved file excerpts travel to the model server.
-
-No course endpoint is configured yet. The CLI does not expose API-key configuration. Do not expose an unauthenticated Ollama server publicly merely to make this command work.
-
-## Python dependency
-
-```sh
-python -m pip install -r requirements.txt
-```
-
-`requirements.txt` pins `ollama==0.6.3`, the Python client version used for our local tests. It does not pin the Ollama server, model weights, or transitive Python dependencies. The README recommends Python 3.10+; the initial local smoke tests used Python 3.9, so they do not establish a cross-version compatibility matrix.
+`--host https://YOUR-ENDPOINT --model MODEL` sends model calls to a remote server instead. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. No course endpoint is configured, and the CLI has no API-key option. Do not expose an unauthenticated Ollama server to the internet to make this work.
 
 ## Command-line options
 
@@ -63,52 +39,57 @@ Run `python agent.py --help` for the full interface.
 | `--file PATH` | Select one UTF-8 text file | Bundled `sample.txt` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
-| `--trace PATH` | Save full requests, responses, and events as JSONL | No trace file |
+| `--trace PATH` | Save full requests, responses, and events as JSONL; refuses to overwrite | No trace file |
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |
 | `--search-only` | Remove the reader and its required-read check | Off |
 | `--think` | Enable thinking for a model that supports it | Off |
 
-Trace files must not already exist. They include retrieved text and can contain sensitive information. The repository ignores JSONL traces, `runs/`, and the virtual environment.
+Traces contain retrieved file text. The repository ignores `*.jsonl`, `runs/`, and `.venv/`.
 
-## Tools and boundaries
+## Tools
 
-The operator selects the file, which is read into a fixed snapshot at startup. The model cannot supply paths, execute shell commands, or write files through the tools.
+The operator selects the file, which is read into a fixed snapshot at startup. The model cannot supply paths, run shell commands, or write files.
 
-- `search(query)` requires every whitespace-separated query term to occur as a case-insensitive substring on a line, in any order. It returns up to 12 matching lines with their original line numbers and indicates whether results were truncated.
-- `read_lines(start, end)` returns an inclusive, 1-based range of at most 20 lines.
-- Files are limited to 200,000 characters; individual lines to 1,000 characters.
-- Unknown tools and invalid arguments return errors to the model.
+- `search(query)`: every whitespace-separated term must occur as a case-insensitive substring of the line, in any order. Returns up to 12 matching lines with their line numbers and says whether more were cut off.
+- `read_lines(start, end)`: an inclusive, 1-based range of at most 20 lines.
+- Files are limited to 200,000 characters and lines to 1,000 characters.
+- Unknown tools and invalid arguments return an error to the model.
 
-These restrictions describe the available tool interface, not an OS sandbox. Python still runs with the operator's permissions.
+These limits describe the tool interface, not an OS sandbox. Python runs with the operator's permissions.
 
-## What the answer checks establish
+## Checks before an answer is accepted
 
-Before accepting a proposed final answer, the harness checks that:
+1. At least one valid search ran.
+2. If no search returned lines, a second distinct search ran. After two empty searches, Python returns a fixed abstention instead of the model's answer.
+3. If the reader is enabled, the lines read so far include some search hit together with its immediate neighbors.
+4. The answer contains at least one `[L25]` or `[L25-L26]` citation, and every citation refers to returned lines.
 
-1. At least one valid search occurred.
-2. If no lines were found, a second distinct search was attempted. After two unsuccessful searches, Python returns a fixed, qualified abstention.
-3. If lines were found and the reader is enabled, a read included a previously retrieved line and its immediate neighbors where they exist.
-4. An evidence-based answer contains at least one recognized `[L25]` or `[L25-L26]` citation, and every recognized citation refers to returned lines.
+A failed check appends feedback to the conversation and consumes one step of the budget. The checks do not establish that every claim is cited, that the cited passage supports the claim, or that the neighbors were enough context. An answer can cite real evidence while omitting an exception elsewhere in the file.
 
-A failed check appends feedback and consumes the same bounded model-call budget. The checks do not establish that every claim is cited, that the passage supports the claim, or that immediate neighbors provide sufficient context. In particular, an answer can cite real evidence while omitting an important exception elsewhere.
+## Limits and stop reasons
 
-## Limits and stopping
+Each model request sets an 8,192-token context, a 1,024-token output limit, and temperature 0, with a 120-second client timeout. Model support for these options varies.
 
-Each model response may request at most eight tools. The model request sets an 8,192-token context, a 1,024-token output limit, and temperature 0. The client timeout is 120 seconds. Model support for options can vary.
+| Stop reason | Meaning | Answer returned |
+|---|---|---|
+| `final_answer` | An answer passed the checks | The model's answer |
+| `no_evidence_found` | Two searches found nothing | The fixed abstention |
+| `step_limit` | `--max-steps` model calls used up | None, exit status 1 |
+| `model_output_limit` | The model's response was truncated | None, exit status 1 |
 
-Reaching the call cap, receiving a truncated model response, or other unsuccessful termination does not count as a completed answer. An accepted answer is still a claim to check against the source.
+An accepted answer is still a claim to check against the source.
 
-There is no context compaction, network retry policy, semantic citation verifier, or service authentication. Growing history can exceed the context window. Temperature 0 does not guarantee reproducibility across machines or model-server versions.
+There is no context compaction, retry on network errors, semantic citation check, or server authentication. A long history can exceed the context window, and temperature 0 does not guarantee identical output across machines or server versions.
 
-## Test the harness without a model
+## Tests
 
 ```sh
 python -m unittest discover -s . -v
 ```
 
-The 12 tests use Python's standard library and fake model responses; they do not require Ollama to be running. They check search semantics, line numbering, validation, message flow, retrieval requirements, citation checks, and stopping behavior. They do not measure model quality.
+The 12 tests use the standard library and fake model responses, so Ollama need not be running. They cover search semantics, line numbering, argument validation, message flow, the retrieval and citation checks, and stopping. They do not measure model quality.
 
-## API references
+## References
 
 - [Ollama Python client](https://github.com/ollama/ollama-python)
 - [Ollama tool calling](https://docs.ollama.com/capabilities/tool-calling)

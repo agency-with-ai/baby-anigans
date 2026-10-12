@@ -55,7 +55,7 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(self.events[-1][1]["reason"], "step_limit")
 
     def test_requires_neighbors_not_just_match(self):
-        for start, end, accepted in [(29, 29, False), (28, 30, True)]:
+        for start, end, accepted in [(29, 29, False), (1, 3, False), (28, 30, True)]:
             client = FakeClient([call("search", {"query": "screened entries"}),
                                  call("read_lines", {"start": start, "end": end}),
                                  {"role": "assistant", "content": "Rule. [L29]"}])

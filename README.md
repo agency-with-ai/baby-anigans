@@ -17,21 +17,21 @@ Those questions are the difference between using an agent and being used by one.
 
 ## What one run looks like
 
-Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools, checks answers, and decides when to stop.
+Three words are used throughout. The **agent** is the whole program, Baby Anigans. The **model** is the language model inside it, served by Ollama. The **harness** is the Python around the model: it runs the tools (the *Tool* lines below), checks answers (the *Check* lines), and decides when to stop.
 
-The agent answers one question about one text file and must cite line numbers. Below is a real run with a small local model, lightly trimmed. Every line not labeled *Model* was produced by Python.
+The agent answers one question about one text file and must cite line numbers. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
  1  You      What should happen if the feed is unavailable?
 
  2  Model    I could not find any evidence regarding what should happen...
-    Harness  Search the file before answering.
+    Check    Search the file before answering.
 
  3  Model    search(query="feed unavailable")
     Tool     25: If the feed is unavailable, report the failure and write no shortlist.
 
  4  Model    The evidence indicates that the system should report the failure...
-    Harness  Read neighboring lines too, not only the match. Call read_lines(24, 26).
+    Check    Read neighboring lines too, not only the match. Call read_lines(24, 26).
 
  5  Model    read_lines(start=24, end=26)
     Tool     24: Failure behavior
@@ -39,20 +39,20 @@ The agent answers one question about one text file and must cite line numbers. B
              26: A failed run must not mark any entries read.
 
  6  Model    Line 24 mentions "Failure behavior", line 25 states...
-    Harness  Cite the retrieved evidence using [L25] or [L25-L26].
+    Check    Cite the retrieved evidence using [L25] or [L25-L26].
 
  7  Model    If the feed is unavailable, report the failure and write no shortlist. [L25]
-    Harness  Accepted.
+    Check    Accepted.
 ```
 
 What to notice:
 
 - **Step 2.** The model's first move was to answer without looking. The harness refused and appended its refusal to the conversation, where the model reads it as if a user had typed it.
-- **Step 3.** The model did not search anything. It asked for a search by name, and a Python function ran it. The line number comes from Python.
+- **Step 3.** The model did not search anything. It asked for a search by name, and a Python function ran it. The line number comes from Python. The file was on disk the whole time, but the model saw line 25 only now, and lines 24 and 26 only at step 5.
 - **Steps 4 and 6.** Two more answers bounced. Each bounce is a few lines of code you can read, and the budget of bounces is a number you can change.
 - **Step 7.** The accepted answer cites a line the tools really returned. Nothing has checked that line 25 actually supports the claim. That is your job.
 
-The file was on disk the whole time. The model saw line 25 only after step 3, and lines 24 and 26 only after step 5. The full record of every step, including the exact input the model received each time, is in the trace file.
+The trace file records every step, including the exact input the model received each time.
 
 ## Where the pieces are
 
@@ -79,10 +79,14 @@ Each takes a minute and the trace shows what changed.
 
 ## Setup
 
-Everything needed to install and run is in [docs/reference.md](docs/reference.md), written so a person or a coding agent can follow it without further context. Short version: Python 3.10+, [Ollama](https://ollama.com/download), `pip install -r requirements.txt`, `ollama pull qwen3:1.7b`, then
+Python 3.10+ and [Ollama](https://ollama.com/download), then:
 
 ```sh
+pip install -r requirements.txt
+ollama pull qwen3:1.7b
 python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
 ```
+
+Flags, model sizes, limits, stop reasons, and tests are in [docs/reference.md](docs/reference.md).
 
 Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](project-spec.md). [Tests](test_agent.py) run against a fake model, no Ollama needed. [MIT license](LICENSE).

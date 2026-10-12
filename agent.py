@@ -1,4 +1,4 @@
-"""A tiny file-search agent. The harness is run_agent; the tools are FileTools."""
+"""A tiny file-search agent. The loop is run_agent, the tools are FileTools, the checks are Evidence."""
 
 import argparse
 import json
@@ -20,8 +20,7 @@ How to answer:
 - Use only what the tools returned.
 - After each claim, cite the line it came from using the number the tool showed, in the form
   [L25] for one line or [L25-L26] for a range. Never cite a line you did not retrieve.
-- If a question asks whether ALL items satisfy a rule and there is any exception, answer No.
-  State the exception up front; do not state a rule and then contradict it.
+- If the evidence includes an exception to a rule, state the exception first.
 - If your searches found nothing relevant, say you could not find it. Do not claim the file
   has no answer.
 - Be concise."""
@@ -63,7 +62,6 @@ ABSTENTION = ("I could not find supporting lines with the searches attempted. "
 OPTIONS = {"num_ctx": 8192, "num_predict": 1024, "temperature": 0}
 MAX_MATCHES = 12
 MAX_READ = 20
-MAX_CALLS_PER_TURN = 8
 CITATION = re.compile(r"\[L(\d+)(?:-L(\d+))?\]")
 
 
@@ -140,35 +138,35 @@ class Evidence:
         self.files = files
         self.search_only = search_only
         self.searches = set()  # distinct queries that ran without error
-        self.seen = set()      # line numbers any tool has returned
+        self.found = set()     # line numbers search has returned
         self.read = set()      # line numbers read_lines has returned
 
     def record(self, name, arguments, numbers):
-        self.seen |= numbers
         if name == "search":
             self.searches.add(arguments["query"].casefold())
+            self.found |= numbers
         else:
             self.read |= numbers
 
     @property
     def exhausted(self):
         """Two different searches found nothing: the harness abstains instead of the model."""
-        return not self.seen and len(self.searches) >= 2
+        return not self.found and len(self.searches) >= 2
 
     def check(self, answer):
         """Return corrective feedback if the answer fails a check, else None."""
         if not self.searches:
             return "Search the file before answering."
-        if not self.seen:
+        if not self.found:
             return "No evidence retrieved. Search again with a different, shorter keyword."
-        if not self.search_only and not any(self.files.neighborhood(n) <= self.read for n in self.seen):
-            around = self.files.neighborhood(min(self.seen))
+        if not self.search_only and not any(self.files.neighborhood(n) <= self.read for n in self.found):
+            around = self.files.neighborhood(min(self.found))
             return ("Read neighboring lines too, not only the match. "
                     f"Call read_lines(start={min(around)}, end={max(around)}) before answering.")
         cited = cited_lines(answer)
         if not cited:
             return "Cite the retrieved evidence using [L25] or [L25-L26]."
-        if not cited <= self.seen:
+        if not cited <= self.found | self.read:
             return "Cite only line numbers actually returned by the tools."
         return None
 
@@ -197,8 +195,6 @@ def run_agent(client, model, question, files, emit, max_steps=8, search_only=Fal
         messages.append(message)
 
         calls = message.get("tool_calls") or []
-        if len(calls) > MAX_CALLS_PER_TURN:
-            return stop("too_many_tool_calls")
         for call in calls:
             name, arguments = call["function"]["name"], call["function"]["arguments"]
             result, numbers = files.dispatch(name, arguments, search_only)
@@ -217,7 +213,7 @@ def run_agent(client, model, question, files, emit, max_steps=8, search_only=Fal
             emit("check", {"problem": problem})
             messages.append({"role": "user", "content": problem})
             continue
-        return stop("final_answer", answer) if answer else stop("empty_response")
+        return stop("final_answer", answer)
     return stop("step_limit")
 
 

@@ -21,7 +21,7 @@ Keep:
 
 Leave out interactive chat, multiple documents, web browsing, embeddings, persistent memory, skills, subagents, and automatic file editing. These are possible later extensions, not prerequisites for understanding the first loop.
 
-Try the supplied fictional feed-project file first. Ask what should happen when its feed is unavailable, then about a rule with an exception on the following line, then about information the file does not supply.
+Try the supplied file first, the 6.390 course information and grading page. Ask about the late penalty, then about a rule that carries its own exception, then about information the file does not supply.
 
 Judge usefulness in two ways:
 
@@ -42,19 +42,19 @@ Building: the tools, dispatcher, message loop, trace output, limits, and tests. 
 
 ## A concrete request and acceptable results
 
-**Request:** "Are all screened entries marked read?"
+**Request:** "Are labs due in session?"
 
-The sample file gives a general rule, mark screened entries read after a successful sweep, and an exception: leave borderline entries unread until the instructor reviews them.
+The file gives a general rule, labs are released and due in session, and an exception in the next sentence: if the first checkoff is completed by the end of the lab section, the remaining checkoffs can be completed without penalty by 9pm the following Tuesday.
 
-An acceptable answer states the rule with that exception and cites the supporting lines. "No, borderline entries remain unread until review" and "Screened entries are marked read after a successful sweep, except borderline entries awaiting review" are both acceptable. An unconditional "Yes" is not.
+An acceptable answer states the rule with that exception and cites the supporting line. "Yes, unless the first checkoff is done in session, in which case the rest can be finished by the following Tuesday" is acceptable. An unconditional "Yes" is not.
 
 By hand:
 
-1. A search for `screened entries` finds the general rule but not the exception.
-2. Reading the neighboring line reveals the exception.
-3. The answer must keep that qualification. A citation to the rule alone does not justify a universal conclusion.
+1. A search for `due in session` finds the line that holds both the rule and the exception.
+2. The exception is therefore in the model's context from the first tool result.
+3. The answer must keep that qualification. A citation to the line does not show that the model used all of it.
 
-This case motivates the neighboring-line read before an evidence-based answer is accepted. The check is limited: exceptions may appear farther away, the model may misread text it receives, and the harness cannot certify semantic support by checking line numbers.
+This case shows the limit of every check in the harness: the evidence was retrieved and cited, and the harness cannot tell whether it was read. The neighboring-line read helps when an exception sits on an adjacent line; exceptions may appear farther away, the model may misread text it receives, and the harness cannot certify semantic support by checking line numbers.
 
 If the model searches poorly and finds nothing, the program reports that its searches found no supporting lines. That is an honest retrieval failure, not a correct answer. If the run hits a limit, it must report an incomplete run rather than present an unchecked answer as successful. For a question the file does not answer, such as the monthly hosting budget, the agent must not invent one, and must not claim that a few failed searches prove absence.
 

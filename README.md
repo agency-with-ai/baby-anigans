@@ -6,40 +6,37 @@
 
 The LLM (the *Model* lines below) is served by [Ollama](https://ollama.com). The harness is the Python around it: it runs the tools (*Tool* lines), checks answers (*Check* lines), and decides when to stop.
 
-The bundled [`example/input.txt`](example/input.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
+The bundled [`example/input.md`](example/input.md) is the 6.390 course information and grading page, copied from the course website; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
- 1  You      What should happen if the feed is unavailable?
+ 1  You      What is the penalty for a late submission?
 
- 2  Model    I could not find any evidence regarding what should happen...
+ 2  Model    I cannot determine the penalty for a late submission as the file was not provided.
     Check    Search the file before answering.
 
- 3  Model    search(query="feed unavailable")
-    Tool     25: If the feed is unavailable, report the failure and write no shortlist.
+ 3  Model    search(query="penalty late submission")
+    Tool     125: Late submissions incur a 20% penalty per day, applied linearly (so 1 hour late is -0.83%). See the extension policy below.
 
- 4  Model    The evidence indicates that the system should report the failure...
-    Check    Read neighboring lines too, not only the match. Call read_lines(24, 26).
+ 4  Model    The penalty for a late submission is 20% per day, applied linearly. [L125]
+    Check    Read neighboring lines too, not only the match. Call read_lines(124, 126).
 
- 5  Model    read_lines(start=24, end=26)
-    Tool     24: Failure behavior
-             25: If the feed is unavailable, report the failure and write no shortlist.
-             26: A failed run must not mark any entries read.
+ 5  Model    read_lines(start=124, end=126)
+    Tool     124:
+             125: Late submissions incur a 20% penalty per day, applied linearly (so 1 hour late is -0.83%). See the extension policy below.
+             126:
 
- 6  Model    Line 24 mentions "Failure behavior", line 25 states...
-    Check    Cite the retrieved evidence using [L25] or [L25-L26].
-
- 7  Model    If the feed is unavailable, report the failure and write no shortlist. [L25]
+ 6  Model    The penalty for a late submission is 20% per day, applied linearly. [L125]
     Check    Accepted.
 ```
 
 What to notice:
 
-- **Step 2.** The model's first move was to answer without looking. The harness refused and appended its refusal to the conversation, where the model reads it as if a user had typed it.
-- **Step 3.** The model did not search anything. It asked for a search by name, and a Python function ran it. The line number comes from Python. The file was on disk the whole time, but the model saw line 25 only now, and lines 24 and 26 only at step 5.
-- **Steps 4 and 6.** Two more answers bounced. Each bounce is a few lines of code you can read, and the budget of bounces is a number you can change.
-- **Step 7.** The accepted answer cites a line the tools really returned. Nothing has checked that line 25 actually supports the claim. That is your job.
+- **Step 2.** The model's first move was to answer without looking. It even said the file was not provided, which is true: the model never gets the file, only tool results. The harness refused and appended its refusal to the conversation, where the model reads it as if a user had typed it.
+- **Step 3.** The model did not search anything. It asked for a search by name, and a Python function ran it. The line number comes from Python. The file was on disk the whole time, but the model saw line 125 only now, and lines 124 and 126 only at step 5.
+- **Step 4.** A correct answer bounced anyway, because a rule says read around the match first. The rule is a few lines of code you can read, and the budget of bounces is a number you can change. Here the neighbors were blank lines, so the rule bought nothing. On another question it is the difference between the rule and its exception.
+- **Step 6.** The accepted answer cites a line the tools really returned. Nothing has checked that line 125 actually supports the claim, or that "see the extension policy below" does not change it. That is your job.
 
-The trace file records every step, including the exact input the model received each time. The full trace of this run is [`example/feed-failure.jsonl`](example/feed-failure.jsonl). Each `request` row holds the complete message list sent to the model at that step, so the system prompt and every tool result repeat as the conversation grows. Open it to inspect a step, not to read top to bottom.
+The trace file records every step, including the exact input the model received each time. The full trace of this run is [`example/late-penalty.jsonl`](example/late-penalty.jsonl). Each `request` row holds the complete message list sent to the model at that step, so the system prompt and every tool result repeat as the conversation grows. Open it to inspect a step, not to read top to bottom.
 
 ## Where the pieces are
 
@@ -59,9 +56,10 @@ The checks are narrow on purpose. Python can verify that the model searched, rea
 
 Each takes a minute and the trace shows what changed.
 
-- Ask "Are all screened entries marked read?" The file has a rule on [line 29 and an exception on line 30](https://github.com/agency-with-ai/baby-anigans/blob/983e29ab571ada5b9bb41fc74e4a310aece913d8/example/input.txt#L29-L30). A search returns 29 alone. Did the model read 30? If the answer is wrong, was the exception missing from context, or present and ignored? One saved run: [`example/exception.jsonl`](example/exception.jsonl).
-- Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/exception-search-only.jsonl`](example/exception-search-only.jsonl), where every check passed and the answer is still wrong.
-- Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections?
+- Ask "Are labs due in session?" The rule and its exception share [line 50](PERMALINK): due in session, unless the first checkoff is done. A search returns that whole line, so the exception is in context. Did the answer mention it? In [`example/lab-deadline.jsonl`](example/lab-deadline.jsonl) it did not.
+- Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/lab-deadline-search-only.jsonl`](example/lab-deadline-search-only.jsonl).
+- Ask "What should I do if I am sick?" The file answers twice, on the info page and in more detail on the grading page. In [`example/sick.jsonl`](example/sick.jsonl) the search found both and the model read around one. Was the second answer missing from context, or present and ignored?
+- Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections? In our run it still answered "Yes, labs are due in session" without the exception.
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?
 
 ## Setup
@@ -71,7 +69,7 @@ Python 3.10+ and [Ollama](https://ollama.com/download), then:
 ```sh
 pip install -r requirements.txt
 ollama pull qwen3:1.7b
-python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
+python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
 Flags, model sizes, limits, stop reasons, and tests are in [docs/running-baby-anigans.md](docs/running-baby-anigans.md).

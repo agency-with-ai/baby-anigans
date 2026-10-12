@@ -12,7 +12,7 @@ cd baby-anigans
 python3 -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ollama pull qwen3:1.7b
-python agent.py "What should happen if the feed is unavailable?" --trace first-run.jsonl
+python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
 If Ollama is not already running, start `ollama serve` in another terminal. `requirements.txt` pins the Python client (`ollama==0.6.3`), not the Ollama server or the model weights.
@@ -26,7 +26,7 @@ If Ollama is not already running, start `ollama serve` in another terminal. `req
 
 Memory is what Ollama reported on our M4 Max Studio at the configured 8K context; allow extra for the OS and other applications. We have not measured student laptops. A 16 GB laptop is a planning target for the larger model, not a tested minimum.
 
-The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the feed-failure, exception, and deployment questions with citations in local smoke runs; correctness is still not guaranteed.
+The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the late-penalty question with a citation and abstained on a question the file cannot answer in local smoke runs, but it still answered "Yes, labs are due in session" and dropped the exception; a bigger model is not a correctness guarantee.
 
 `--host https://agencyai.mit.edu/ollama --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. `OLLAMA_API_KEY=TOKEN` in the environment does the same. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
 
@@ -36,7 +36,7 @@ Run `python agent.py --help` for the full interface.
 
 | Option | Purpose | Default |
 |---|---|---|
-| `--file PATH` | Select one UTF-8 text file | Bundled `example/input.txt` |
+| `--file PATH` | Select one UTF-8 text file | Bundled `example/input.md` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
 | `--api-key TOKEN` | Bearer token for a shared server | `$OLLAMA_API_KEY` |
@@ -84,15 +84,16 @@ There is no context compaction, retry on network errors, semantic citation check
 
 ## Saved traces
 
-`example/` holds the input file and three complete traces, recorded 2026-10-12 with `qwen3:1.7b` on Ollama 0.35.1 at temperature 0. They are one run each, not the only possible run; a new model build can change them.
+`example/` holds the input file and four complete traces, recorded 2026-10-12 with `qwen3:1.7b` on Ollama 0.35.1 at temperature 0. They are one run each, not the only possible run; a new model build can change them.
 
 | File | Command |
 |---|---|
-| `feed-failure.jsonl` | `python agent.py "What should happen if the feed is unavailable?"` |
-| `exception.jsonl` | `python agent.py "Are all screened entries marked read?"` |
-| `exception-search-only.jsonl` | `python agent.py --search-only "Are all screened entries marked read?"` |
+| `late-penalty.jsonl` | `python agent.py "What is the penalty for a late submission?"` |
+| `lab-deadline.jsonl` | `python agent.py "Are labs due in session?"` |
+| `lab-deadline-search-only.jsonl` | `python agent.py --search-only "Are labs due in session?"` |
+| `sick.jsonl` | `python agent.py "What should I do if I am sick?"` |
 
-Regenerate all three after any change to the system prompt, tools, or options, with `--trace example/<name>.jsonl` after deleting the old file. A test checks that the saved traces still match the current prompt, tools, and options.
+Regenerate them after any change to the system prompt, tools, or options, with `--trace example/<name>.jsonl` after deleting the old file. A test checks that the saved traces still match the current prompt, tools, and options.
 
 ## Tests
 

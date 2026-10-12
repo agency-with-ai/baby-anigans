@@ -30,21 +30,21 @@ def call(name, arguments):
 
 class AgentTests(unittest.TestCase):
     def setUp(self):
-        self.files = FileTools(Path(__file__).parent / "example" / "input.txt")
+        self.files = FileTools(Path(__file__).parent / "example" / "input.md")
         self.events = []
 
     def emit(self, event, data):
         self.events.append((event, copy.deepcopy(data)))
 
     def test_search_returns_actual_line_numbers(self):
-        result, numbers = self.files.search("UNAVAILABLE")
+        result, numbers = self.files.search("PENALIZED")
         self.assertEqual(result["total_matches"], 1)
         number, text = result["lines"].split(": ", 1)
         self.assertEqual(self.files.lines[int(number) - 1], text)
         self.assertEqual(numbers, {int(number)})
 
     def test_search_matches_terms_in_any_order(self):
-        self.assertIn("25:", self.files.search("unavailable feed")[0]["lines"])
+        self.assertIn("125:", self.files.search("submission late")[0]["lines"])
 
     def test_rejects_unseen_or_missing_citations(self):
         for answer in ("Failure.", "Failure. [L999]", "Failure. [L24-L25]"):
@@ -55,10 +55,10 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(self.events[-1][1]["reason"], "step_limit")
 
     def test_requires_neighbors_not_just_match(self):
-        for start, end, accepted in [(29, 29, False), (1, 3, False), (28, 30, True)]:
-            client = FakeClient([call("search", {"query": "screened entries"}),
+        for start, end, accepted in [(50, 50, False), (1, 3, False), (49, 51, True)]:
+            client = FakeClient([call("search", {"query": "due in session"}),
                                  call("read_lines", {"start": start, "end": end}),
-                                 {"role": "assistant", "content": "Rule. [L29]"}])
+                                 {"role": "assistant", "content": "Rule. [L50]"}])
             result = run_agent(client, "fake", "Question", self.files, self.emit, max_steps=3)
             self.assertEqual(result is not None, accepted)
 
@@ -78,7 +78,7 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(self.files.search("xyzzy")[0]["total_matches"], 0)
 
     def test_inclusive_read(self):
-        self.assertEqual(self.files.read_lines(1, 2), ({"lines": "1: Feed shortlist project\n2: "}, {1, 2}))
+        self.assertEqual(self.files.read_lines(1, 2), ({"lines": "1: # 6.390 Introduction to Machine Learning, Fall 2026\n2: "}, {1, 2}))
 
     def test_invalid_calls_are_errors(self):
         for name, args in [("shell", {}), ("search", {"query": ""}),
@@ -90,14 +90,14 @@ class AgentTests(unittest.TestCase):
                 self.assertIn("error", self.files.dispatch(name, args)[0])
 
     def test_tool_result_reaches_next_call(self):
-        client = FakeClient([call("search", {"query": "unavailable"}),
-                             {"role": "assistant", "content": "Report failure. [L25]"}])
+        client = FakeClient([call("search", {"query": "penalized"}),
+                             {"role": "assistant", "content": "Not penalized. [L136]"}])
         answer = run_agent(client, "fake", "What if it fails?", self.files, self.emit,
                            search_only=True)
-        self.assertIn("Report failure", answer)
+        self.assertIn("Not penalized", answer)
         result = client.requests[1]["messages"][-1]
         self.assertEqual(result["role"], "tool")
-        self.assertIn("unavailable", json.loads(result["content"])["lines"])
+        self.assertIn("penalized", json.loads(result["content"])["lines"])
         self.assertEqual(len(client.requests[0]["messages"]), 2)
 
     def test_search_only_removes_and_blocks_reader(self):

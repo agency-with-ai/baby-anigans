@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
@@ -223,6 +224,8 @@ def main():
     parser.add_argument("--file", type=Path, default=Path(__file__).with_name("sample.txt"))
     parser.add_argument("--model", default="qwen3:1.7b", help="Ollama model name (default: %(default)s)")
     parser.add_argument("--host", default="http://localhost:11434")
+    parser.add_argument("--api-key", default=os.environ.get("OLLAMA_API_KEY"),
+                        help="Bearer token for a shared Ollama server (default: $OLLAMA_API_KEY)")
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")
     parser.add_argument("--search-only", action="store_true", help="Remove the read_lines tool")
     parser.add_argument("--think", action="store_true", help="Enable model thinking (requires model support)")
@@ -232,7 +235,8 @@ def main():
         parser.error("--max-steps must be positive")
 
     from ollama import Client  # imported here so the tests run without the client installed
-    client = Client(host=args.host, timeout=120)
+    headers = {"Authorization": f"Bearer {args.api_key}"} if args.api_key else None
+    client = Client(host=args.host, headers=headers, timeout=120)
     files = FileTools(args.file)
     trace = args.trace.open("x", encoding="utf-8") if args.trace else None
 

@@ -28,7 +28,7 @@ Memory is what Ollama reported on our M4 Max Studio at the configured 8K context
 
 The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the feed-failure, exception, and deployment questions with citations in local smoke runs; correctness is still not guaranteed.
 
-`--host https://YOUR-ENDPOINT --model MODEL` sends model calls to a remote server instead. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. No course endpoint is configured, and the CLI has no API-key option. Do not expose an unauthenticated Ollama server to the internet to make this work.
+`--host https://agencyai.mit.edu/ollama --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. `OLLAMA_API_KEY=TOKEN` in the environment does the same. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
 
 ## Command-line options
 
@@ -39,6 +39,7 @@ Run `python agent.py --help` for the full interface.
 | `--file PATH` | Select one UTF-8 text file | Bundled `sample.txt` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
+| `--api-key TOKEN` | Bearer token for a shared server | `$OLLAMA_API_KEY` |
 | `--trace PATH` | Save full requests, responses, and events as JSONL; refuses to overwrite | No trace file |
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |
 | `--search-only` | Remove the reader and its required-read check | Off |

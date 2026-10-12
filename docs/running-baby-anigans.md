@@ -28,7 +28,24 @@ Memory is what Ollama reported on our M4 Max Studio at the configured 8K context
 
 The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the late-penalty question with a citation and abstained on a question the file cannot answer in local smoke runs, but it still answered "Yes, labs are due in session" and dropped the exception; a bigger model is not a correctness guarantee.
 
-`--host https://agencyai.mit.edu/ollama/v1 --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. `OPENAI_API_KEY=TOKEN` in the environment does the same. A hosted provider works the same way: `--host https://parley.api.mit.edu/v1 --model gpt-5.6-sol --api-key KEY` for MIT's Parley gateway, or any OpenAI-compatible endpoint. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
+`--host https://agencyai.mit.edu/ollama/v1 --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. `OPENAI_API_KEY=TOKEN` in the environment does the same. Any other OpenAI-compatible endpoint works the same way; see the next section for MIT's gateway.
+
+## Hosted models through Parley
+
+[Parley](https://parley.api.mit.edu) is MIT's gateway to commercial models. If you have a Parley key, the same agent can run Claude, GPT, or Gemini models with nothing installed locally except Python:
+
+```sh
+export OPENAI_API_KEY=sk-parley-v1-...
+python agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?" --trace parley-claude.jsonl
+python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?" --trace parley-gpt.jsonl
+```
+
+`curl -H "Authorization: Bearer $OPENAI_API_KEY" https://parley.api.mit.edu/v1/models` lists the model names you can pass to `--model`. Two things to know:
+
+- Your question and every line the tools retrieve leave your machine and go through the gateway to the provider. Use a file you are comfortable sending.
+- `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above.
+
+The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
 
 ## Command-line options
 

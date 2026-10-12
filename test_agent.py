@@ -123,7 +123,8 @@ class SavedTraceTests(unittest.TestCase):
 
     def test_saved_traces_match_current_prompt_tools_and_options(self):
         paths = sorted((Path(__file__).parent / "example").glob("*.jsonl"))
-        self.assertEqual([p.name for p in paths], ["lab-deadline-search-only.jsonl", "lab-deadline.jsonl",
+        self.assertEqual([p.name for p in paths], ["lab-deadline-claude-opus-5-5.jsonl", "lab-deadline-gpt-5.6-sol.jsonl",
+                                                   "lab-deadline-search-only.jsonl", "lab-deadline.jsonl",
                                                    "late-penalty.jsonl", "sick.jsonl"])
         for path in paths:
             rows = [json.loads(line) for line in path.open(encoding="utf-8")]

@@ -84,7 +84,7 @@ There is no context compaction, retry on network errors, semantic citation check
 
 ## Saved traces
 
-`example/` holds the input file and four complete traces, recorded 2026-10-12 with `qwen3:1.7b` on Ollama 0.35.1 through its OpenAI-compatible endpoint, at temperature 0 with thinking off. They are one run each, not the only possible run; a new model build can change them.
+`example/` holds the input file and six complete traces, recorded 2026-10-12. The first four use `qwen3:1.7b` on Ollama 0.35.1 through its OpenAI-compatible endpoint; the last two use hosted models through MIT's Parley gateway. All at temperature 0 with thinking off. They are one run each, not the only possible run; a new model build can change them.
 
 | File | Command |
 |---|---|
@@ -92,6 +92,8 @@ There is no context compaction, retry on network errors, semantic citation check
 | `lab-deadline.jsonl` | `python agent.py "Are labs due in session?"` |
 | `lab-deadline-search-only.jsonl` | `python agent.py --search-only "Are labs due in session?"` |
 | `sick.jsonl` | `python agent.py "What should I do if I am sick?"` |
+| `lab-deadline-claude-opus-5-5.jsonl` | `python agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?"` |
+| `lab-deadline-gpt-5.6-sol.jsonl` | `python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?"` |
 
 Regenerate them after any change to the system prompt, tools, or options, with `--trace example/<name>.jsonl` after deleting the old file. A test checks that the saved traces still match the current prompt, tools, and options.
 

@@ -8,23 +8,26 @@ from agent import OPTIONS, SYSTEM, TOOLS, FileTools, run_agent
 
 
 class FakeClient:
+    """Stands in for openai.OpenAI: client.chat.completions.create(**request)."""
+
     def __init__(self, messages, reason="stop"):
         self.messages = iter(messages)
         self.requests = []
         self.reason = reason
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
 
-    def chat(self, **request):
+    def create(self, **request):
         self.requests.append(copy.deepcopy(request))
         message = next(self.messages)
-        return SimpleNamespace(
-            message=SimpleNamespace(model_dump=lambda **kwargs: message),
-            done_reason=self.reason,
-        )
+        choice = SimpleNamespace(message=SimpleNamespace(model_dump=lambda **kwargs: message),
+                                 finish_reason=self.reason)
+        return SimpleNamespace(choices=[choice])
 
 
 def call(name, arguments):
-    return {"role": "assistant", "content": "", "tool_calls": [
-        {"function": {"name": name, "arguments": arguments}}
+    return {"role": "assistant", "content": None, "tool_calls": [
+        {"id": "call_1", "type": "function",
+         "function": {"name": name, "arguments": json.dumps(arguments)}}
     ]}
 
 
@@ -130,7 +133,7 @@ class SavedTraceTests(unittest.TestCase):
                 for row in rows:
                     if row["event"] == "request":
                         self.assertEqual(row["messages"][0], {"role": "system", "content": SYSTEM})
-                        self.assertEqual(row["options"], OPTIONS)
+                        self.assertEqual({k: row[k] for k in OPTIONS}, OPTIONS)
                         names = {tool["function"]["name"] for tool in row["tools"]}
                         self.assertTrue(names <= {tool["function"]["name"] for tool in TOOLS})
 

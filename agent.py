@@ -60,7 +60,7 @@ TOOLS = [
 
 ABSTENTION = ("I could not find supporting lines with the searches attempted. "
               "This does not prove the file has no answer.")
-OPTIONS = {"num_ctx": 8192, "num_predict": 1024, "temperature": 0}
+OPTIONS = {"max_tokens": 1024, "temperature": 0}
 MAX_MATCHES = 12
 MAX_READ = 20
 CITATION = re.compile(r"\[L(\d+)(?:-L(\d+))?\]")
@@ -186,21 +186,23 @@ def run_agent(client, model, question, files, emit, max_steps=8, search_only=Fal
         return answer
 
     for step in range(1, max_steps + 1):
-        request = dict(model=model, messages=messages, tools=tools, think=think, options=OPTIONS)
+        request = dict(model=model, messages=messages, tools=tools, **OPTIONS)
+        if not think:
+            request["reasoning_effort"] = "none"
         emit("request", {"step": step, **request})
-        response = client.chat(**request)
-        message = response.message.model_dump(exclude_none=True)
-        emit("response", {"step": step, "message": message, "done_reason": response.done_reason})
-        if response.done_reason == "length":
+        choice = client.chat.completions.create(**request).choices[0]
+        message = choice.message.model_dump(exclude_none=True)
+        emit("response", {"step": step, "message": message, "finish_reason": choice.finish_reason})
+        if choice.finish_reason == "length":
             return stop("model_output_limit")
         messages.append(message)
 
         calls = message.get("tool_calls") or []
         for call in calls:
-            name, arguments = call["function"]["name"], call["function"]["arguments"]
+            name, arguments = call["function"]["name"], json.loads(call["function"]["arguments"])
             result, numbers = files.dispatch(name, arguments, search_only)
             emit("tool", {"name": name, "arguments": arguments, "result": result})
-            messages.append({"role": "tool", "tool_name": name, "content": json.dumps(result)})
+            messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
             if "error" not in result:
                 evidence.record(name, arguments, numbers)
         if calls:
@@ -222,21 +224,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("question")
     parser.add_argument("--file", type=Path, default=Path(__file__).parent / "example" / "input.md")
-    parser.add_argument("--model", default="qwen3:1.7b", help="Ollama model name (default: %(default)s)")
-    parser.add_argument("--host", default="http://localhost:11434")
-    parser.add_argument("--api-key", default=os.environ.get("OLLAMA_API_KEY"),
-                        help="Bearer token for a shared Ollama server (default: $OLLAMA_API_KEY)")
+    parser.add_argument("--model", default="qwen3:1.7b", help="Model name on the server (default: %(default)s)")
+    parser.add_argument("--host", default="http://localhost:11434/v1",
+                        help="OpenAI-compatible endpoint: local Ollama, the course server, or a provider")
+    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "none"),
+                        help="API key or course token (default: $OPENAI_API_KEY)")
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")
     parser.add_argument("--search-only", action="store_true", help="Remove the read_lines tool")
-    parser.add_argument("--think", action="store_true", help="Enable model thinking (requires model support)")
+    parser.add_argument("--think", action="store_true", help="Let the model think before answering (model default effort)")
     parser.add_argument("--trace", type=Path, help="Write complete requests/results as JSONL; refuses to overwrite")
     args = parser.parse_args()
     if args.max_steps < 1:
         parser.error("--max-steps must be positive")
 
-    from ollama import Client  # imported here so the tests run without the client installed
-    headers = {"Authorization": f"Bearer {args.api_key}"} if args.api_key else None
-    client = Client(host=args.host, headers=headers, timeout=120)
+    from openai import OpenAI  # imported here so the tests run without the client installed
+    client = OpenAI(base_url=args.host, api_key=args.api_key, timeout=120)
     files = FileTools(args.file)
     trace = args.trace.open("x", encoding="utf-8") if args.trace else None
 

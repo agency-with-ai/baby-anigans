@@ -28,7 +28,7 @@ Memory is what Ollama reported on our M4 Max Studio at the configured 8K context
 
 The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the late-penalty question with a citation and abstained on a question the file cannot answer in local smoke runs, but it still answered "Yes, labs are due in session" and dropped the exception; a bigger model is not a correctness guarantee.
 
-`--host https://agencyai.mit.edu/ollama/v1 --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. `OPENAI_API_KEY=TOKEN` in the environment does the same. Any other OpenAI-compatible endpoint works the same way; see the next section for MIT's gateway.
+`--host https://agencyai.mit.edu/ollama/v1 --model qwen3:8b --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. The server runs `qwen3:8b` on CPU, a medium-size open model that sits between the local default and the hosted models below. `OPENAI_API_KEY=TOKEN` in the environment does the same. Any other OpenAI-compatible endpoint works the same way; see the next section for MIT's gateway.
 
 ## Hosted models through Parley
 

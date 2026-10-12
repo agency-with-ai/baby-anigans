@@ -6,7 +6,7 @@
 
 The LLM (the *Model* lines below) is served by [Ollama](https://ollama.com). The harness is the Python around it: it runs the tools (*Tool* lines), checks answers (*Check* lines), and decides when to stop.
 
-The agent answers one question about one text file and must cite line numbers. The bundled [`sample.txt`](sample.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
+The agent answers one question about one text file and must cite line numbers. The bundled [`example-input.txt`](docs/example-input.txt) is a short spec for a fictional feed-screening tool; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
  1  You      What should happen if the feed is unavailable?

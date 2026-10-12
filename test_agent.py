@@ -30,7 +30,7 @@ def call(name, arguments):
 
 class AgentTests(unittest.TestCase):
     def setUp(self):
-        self.files = FileTools(Path(__file__).with_name("sample.txt"))
+        self.files = FileTools(Path(__file__).parent / "docs" / "example-input.txt")
         self.events = []
 
     def emit(self, event, data):

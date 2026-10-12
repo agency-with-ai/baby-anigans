@@ -36,7 +36,7 @@ Run `python agent.py --help` for the full interface.
 
 | Option | Purpose | Default |
 |---|---|---|
-| `--file PATH` | Select one UTF-8 text file | Bundled `sample.txt` |
+| `--file PATH` | Select one UTF-8 text file | Bundled `docs/example-input.txt` |
 | `--model NAME` | Select an installed model | `qwen3:1.7b` |
 | `--host URL` | Select the model server | `http://localhost:11434` |
 | `--api-key TOKEN` | Bearer token for a shared server | `$OLLAMA_API_KEY` |

@@ -76,4 +76,4 @@ python agent.py "What should happen if the feed is unavailable?" --trace first-r
 
 Flags, model sizes, limits, stop reasons, and tests are in [docs/reference.md](docs/reference.md).
 
-Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](project-spec.md). [Tests](test_agent.py) run against a fake model, no Ollama needed. [MIT license](LICENSE).
+Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](docs/baby-anigans-project-spec.md). [Tests](test_agent.py) run against a fake model, no Ollama needed. [MIT license](LICENSE).

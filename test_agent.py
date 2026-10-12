@@ -119,7 +119,10 @@ class SavedTraceTests(unittest.TestCase):
     """The traces in example/ must describe the code as it is now."""
 
     def test_saved_traces_match_current_prompt_tools_and_options(self):
-        for path in sorted((Path(__file__).parent / "example").glob("*.jsonl")):
+        paths = sorted((Path(__file__).parent / "example").glob("*.jsonl"))
+        self.assertEqual([p.name for p in paths], ["lab-deadline-search-only.jsonl", "lab-deadline.jsonl",
+                                                   "late-penalty.jsonl", "sick.jsonl"])
+        for path in paths:
             rows = [json.loads(line) for line in path.open(encoding="utf-8")]
             with self.subTest(trace=path.name):
                 self.assertEqual(rows[0]["event"], "request")

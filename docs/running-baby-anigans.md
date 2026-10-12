@@ -32,7 +32,12 @@ The default is a toy for inspecting the loop. It can choose poor search queries,
 
 ## Hosted models through Parley
 
-[Parley](https://parley.api.mit.edu) is MIT's gateway to commercial models. If you have a Parley key, the same agent can run Claude, GPT, or Gemini models with nothing installed locally except Python:
+[Parley](https://parley-docs.mit.edu) is MIT's gateway to commercial models, and every MIT student has an account. Getting a key takes a minute:
+
+1. Sign in at [platform.parley.mit.edu](https://platform.parley.mit.edu) with your MIT Okta login. The account is created on first login with $10 of free credit, replenished on the 1st of each month.
+2. Open **My Keys** in the sidebar and click the eye icon to reveal your `sk-parley-v1-...` key. Copy it somewhere safe and never commit it.
+
+With the key, the same agent runs Claude, GPT, or Gemini models with nothing installed locally except Python:
 
 ```sh
 export OPENAI_API_KEY=sk-parley-v1-...
@@ -43,7 +48,7 @@ python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are la
 `curl -H "Authorization: Bearer $OPENAI_API_KEY" https://parley.api.mit.edu/v1/models` lists the model names you can pass to `--model`. Two things to know:
 
 - Your question and every line the tools retrieve leave your machine and go through the gateway to the provider. Use a file you are comfortable sending.
-- `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above.
+- `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above, so the monthly credit covers a semester of this lab many times over. When it runs out mid-month, calls return a 402 until the next top-up.
 
 The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. That matters for reading them: the gateway returns the bare model's reply to our request, so the only harness in those traces is this repository's Python. Running the same question through Claude Code or the Codex CLI would put a second harness, with its own system prompt, tools, and retries, between our loop and the model, and the trace would not show which one made each decision. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
 

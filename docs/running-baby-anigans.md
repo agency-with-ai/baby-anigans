@@ -45,7 +45,7 @@ python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are la
 - Your question and every line the tools retrieve leave your machine and go through the gateway to the provider. Use a file you are comfortable sending.
 - `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above.
 
-The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
+The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. That matters for reading them: the gateway returns the bare model's reply to our request, so the only harness in those traces is this repository's Python. Running the same question through Claude Code or the Codex CLI would put a second harness, with its own system prompt, tools, and retries, between our loop and the model, and the trace would not show which one made each decision. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
 
 ## Command-line options
 
@@ -101,7 +101,7 @@ There is no context compaction, retry on network errors, semantic citation check
 
 ## Saved traces
 
-`example/` holds the input file and six complete traces, recorded 2026-10-12. The first four use `qwen3:1.7b` on Ollama 0.35.1 through its OpenAI-compatible endpoint; the last two use hosted models through MIT's Parley gateway. All at temperature 0 with thinking off. They are one run each, not the only possible run; a new model build can change them.
+`example/` holds the input file and six complete traces, recorded 2026-10-12. The first four use `qwen3:1.7b` on Ollama 0.35.1 through its OpenAI-compatible endpoint; the last two use hosted models called directly through MIT's Parley gateway, so no vendor agent harness is involved. All at temperature 0 with thinking off. They are one run each, not the only possible run; a new model build can change them.
 
 | File | Command |
 |---|---|

@@ -40,7 +40,7 @@ The trace file records every step, including the exact input the model received 
 
 ## Where the pieces are
 
-[agent.py](agent.py) is about 250 lines.
+[agent.py](agent.py) is about 300 lines.
 
 | Name in the code | What it is |
 |---|---|
@@ -49,8 +49,9 @@ The trace file records every step, including the exact input the model received 
 | `Evidence` | What the harness knows the model has seen, and the checks it applies to an answer |
 | `run_agent` | The loop: call the model, run tools, check, continue or stop |
 | `SYSTEM` | The instructions. Compare with `Evidence.check`: one asks, the other enforces |
+| `COMPACT_PROMPT` | What the harness asks the model to keep when `--compact` throws the history away |
 
-The checks are narrow on purpose. Python can verify that the model searched, read around the match, and cited lines the tools returned. Python cannot verify that line 25 supports the claim. Seeing exactly where that boundary sits is most of the lesson, and it is the same boundary in every agent you will ever use.
+The checks are narrow on purpose. Python can verify that the model searched, read around the match, and cited lines the tools returned. Python cannot verify that line 125 supports the claim. Seeing exactly where that boundary sits is most of the lesson, and it is the same boundary in every agent you will ever use.
 
 ## Things to try
 
@@ -60,6 +61,8 @@ Each takes a minute and the trace shows what changed.
 - Add `--search-only`. Same model, one tool fewer. Predict what breaks before you run it, then compare with [`example/lab-deadline-search-only.jsonl`](example/lab-deadline-search-only.jsonl).
 - Ask "What should I do if I am sick?" The file answers twice, on the info page and in more detail on the grading page. In [`example/sick.jsonl`](example/sick.jsonl) the search found both and the model read around one. Was the second answer missing from context, or present and ignored?
 - Add `--model qwen3:8b`. Same harness, bigger model. Fewer corrections? In our run it still answered "Yes, labs are due in session" without the exception. Pointing `--host` at a hosted provider changes nothing else: [`example/lab-deadline-claude-opus-5-5.jsonl`](example/lab-deadline-claude-opus-5-5.jsonl) and [`example/lab-deadline-gpt-5.6-sol.jsonl`](example/lab-deadline-gpt-5.6-sol.jsonl) are the same question through the same harness, and both read a window of lines unprompted and stated the exception first. Compare where in the three traces the exception was in context, and when it was used.
+- Watch the `[usage]` line. Every step resends the whole conversation, and the server reports how much of it was served from its prefix cache. Add `--stamp`, which puts the current time at the top of the system prompt, and run twice: the first step's cache count drops to a handful of tokens, because the prefix now differs between runs. What does that say about where to put volatile text?
+- Add `--compact 2 --note "Rule: write your final answer entirely in capital letters."` and ask about being sick. Every two steps the harness replaces the history with a model-written summary and records what it dropped. Did the rule survive compaction? Read `COMPACT_PROMPT` in `agent.py`, remove the clause about instructions, and run again. Then put the rule in the system prompt instead. Whatever survives is whatever the harness chose to carry.
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?
 
 ## Setup

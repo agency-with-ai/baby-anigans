@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 SYSTEM = """You answer a question about one text file. You cannot see the file directly;
@@ -62,6 +63,9 @@ ABSTENTION = ("I could not find supporting lines with the searches attempted. "
               "This does not prove the file has no answer.")
 OPTIONS = {"max_tokens": 1024, "temperature": 0}
 MAX_MATCHES = 12
+COMPACT_PROMPT = ("Summarize the conversation so far for your own later use: what was searched, which "
+                  "numbered lines were returned and what they said, and any instructions you were given. "
+                  "Plain text, no tool calls.")
 MAX_READ = 20
 CITATION = re.compile(r"\[L(\d+)(?:-L(\d+))?\]")
 
@@ -172,28 +176,53 @@ class Evidence:
         return None
 
 
-def run_agent(client, model, question, files, emit, max_steps=8, search_only=False, think=False):
+def run_agent(client, model, question, files, emit, max_steps=8, search_only=False, think=False,
+              note=None, compact=0, stamp=False):
     """Loop until the model gives an answer that passes the checks. Each step is one model call.
 
     Returns the accepted answer, or None if the run stopped without one.
     """
     tools = TOOLS[:1] if search_only else TOOLS
-    messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}]
+    system = SYSTEM if not stamp else f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n{SYSTEM}"
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": question}]
+    if note:
+        messages.append({"role": "user", "content": note})
     evidence = Evidence(files, search_only)
 
     def stop(reason, answer=None):
         emit("stop", {"reason": reason})
         return answer
 
-    for step in range(1, max_steps + 1):
-        request = dict(model=model, messages=messages, tools=tools, **OPTIONS)
+    def ask(step, messages, tools, purpose="answer", **extra):
+        request = dict(model=model, messages=messages, tools=tools, **OPTIONS, **extra)
         if not think:
             request["reasoning_effort"] = "none"
-        emit("request", {"step": step, **request})
-        choice = client.chat.completions.create(**request).choices[0]
+        emit("request", {"step": step, "purpose": purpose, **request})
+        completion = client.chat.completions.create(**request)
+        choice = completion.choices[0]
         message = choice.message.model_dump(exclude_none=True)
-        emit("response", {"step": step, "message": message, "finish_reason": choice.finish_reason})
-        if choice.finish_reason == "length":
+        usage = completion.usage
+        details = getattr(usage, "prompt_tokens_details", None) if usage else None
+        emit("response", {"step": step, "purpose": purpose, "message": message, "finish_reason": choice.finish_reason,
+                          "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                          "cached_tokens": getattr(details, "cached_tokens", None)})
+        return message, choice.finish_reason
+
+    for step in range(1, max_steps + 1):
+        if compact and step > 1 and (step - 1) % compact == 0:
+            # Replace everything after the question with a model-written summary. Evidence keeps
+            # its own record, so the checks still accept citations the model can no longer see.
+            summary, _ = ask(step, messages + [{"role": "user", "content": COMPACT_PROMPT}], tools, "compact")
+            if summary.get("content"):
+                dropped, messages = messages[2:], messages[:2]
+                messages.append({"role": "user", "content": "Earlier turns were compacted. Summary:\n"
+                                                            + summary["content"]})
+                emit("compact", {"step": step, "dropped": dropped, "summary": messages[-1]["content"]})
+            else:
+                emit("compact", {"step": step, "dropped": [], "summary": "",
+                                 "skipped": "the model answered the summary request with a tool call"})
+        message, finish_reason = ask(step, messages, tools)
+        if finish_reason == "length":
             return stop("model_output_limit")
         messages.append(message)
 
@@ -232,6 +261,10 @@ def main():
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")
     parser.add_argument("--search-only", action="store_true", help="Remove the read_lines tool")
     parser.add_argument("--think", action="store_true", help="Let the model think before answering (model default effort)")
+    parser.add_argument("--note", help="Extra user message after the question, e.g. a rule to follow")
+    parser.add_argument("--compact", type=int, default=0, metavar="N",
+                        help="Every N steps, replace the history with a model-written summary")
+    parser.add_argument("--stamp", action="store_true", help="Put the current time at the top of the system prompt")
     parser.add_argument("--trace", type=Path, help="Write complete requests/results as JSONL; refuses to overwrite")
     args = parser.parse_args()
     if args.max_steps < 1:
@@ -246,12 +279,19 @@ def main():
         if trace:
             trace.write(json.dumps({"event": event, **data}, ensure_ascii=False) + "\n")
             trace.flush()
-        if event in ("tool", "check", "stop"):
+        if event == "response" and data.get("prompt_tokens") is not None:
+            print(f"\n[usage] step {data['step']}: {data['prompt_tokens']} prompt tokens, "
+                  f"{data.get('cached_tokens') or 0} from cache")
+        elif event == "compact":
+            print(f"\n[compact] step {data['step']}: dropped {len(data['dropped'])} messages, "
+                  f"kept a {len(data['summary'])}-character summary")
+        elif event in ("tool", "check", "stop"):
             print(f"\n[{event}] {json.dumps(data, ensure_ascii=False)}")
 
     try:
         answer = run_agent(client, args.model, args.question, files, emit,
-                           args.max_steps, args.search_only, args.think)
+                           args.max_steps, args.search_only, args.think,
+                           args.note, args.compact, args.stamp)
     finally:
         if trace:
             trace.close()

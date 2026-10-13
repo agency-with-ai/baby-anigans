@@ -21,7 +21,7 @@ class FakeClient:
         message = next(self.messages)
         choice = SimpleNamespace(message=SimpleNamespace(model_dump=lambda **kwargs: message),
                                  finish_reason=self.reason)
-        return SimpleNamespace(choices=[choice])
+        return SimpleNamespace(choices=[choice], usage=None)
 
 
 def call(name, arguments):

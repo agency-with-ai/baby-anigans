@@ -66,8 +66,13 @@ Run `python agent.py --help` for the full interface.
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |
 | `--search-only` | Remove the reader and its required-read check | Off |
 | `--think` | Let the model think before answering; off sends `reasoning_effort: none` | Off |
+| `--note TEXT` | Add a user message after the question, for example a rule to follow | None |
+| `--compact N` | Every N steps, replace the history with a model-written summary; the trace records what was dropped | Off |
+| `--stamp` | Put the current time at the top of the system prompt, which defeats the prefix cache between runs | Off |
 
-Traces contain retrieved file text. The repository ignores `*.jsonl`, `runs/`, and `.venv/`.
+Traces contain retrieved file text. The repository ignores `*.jsonl` outside `example/`, `runs/`, and `.venv/`.
+
+Every response event carries `prompt_tokens` and `cached_tokens` as the server reported them, and the CLI prints them as a `[usage]` line. Ollama and OpenAI models report real numbers; OpenAI caches only prefixes above about a thousand tokens, so short runs show zero. Claude through Parley's OpenAI-compatible endpoint reports a few tokens per request, which is a translation artifact, not a measurement. Compaction requests appear in the trace with `"purpose": "compact"` and are followed by a `compact` event listing the dropped messages; `Evidence` keeps its own record across compaction, so the checks still accept citations to lines the model can no longer see.
 
 ## Tools
 

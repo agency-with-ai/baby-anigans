@@ -65,9 +65,9 @@ Each takes a minute and the trace shows what changed.
 - Add `--compact 2 --note "Rule: write your final answer entirely in capital letters."` and ask about being sick. Every two steps the harness replaces the history with a model-written summary and records what it dropped. Did the rule survive compaction? Read `COMPACT_PROMPT` in `agent.py`, remove the clause about instructions, and run again. Then put the rule in the system prompt instead. Whatever survives is whatever the harness chose to carry.
 - Point `--file` at your own notes and ask something the file cannot answer. Does the agent say "I found nothing" or "there is nothing"?
 
-## Setup
+## Running it
 
-Python 3.10+ and [Ollama](https://ollama.com/download), then:
+Everything needed to install and run, including the course server, every flag, the limits and stop reasons, and the saved traces, is in [AGENTS.md](AGENTS.md). The short version, with Python 3.10+ and [Ollama](https://ollama.com/download) installed:
 
 ```sh
 pip install -r requirements.txt
@@ -75,6 +75,4 @@ ollama pull qwen3:1.7b
 python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
-Flags, model sizes, limits, stop reasons, and tests are in [AGENTS.md](AGENTS.md).
-
-Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](project-spec.md). [Tests](test_agent.py) run against a fake model, no server needed. [MIT license](LICENSE).
+Baby Anigans is built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The [project spec](project-spec.md) says what it is for and what it leaves out. The [tests](test_agent.py) run against a fake model, so they need no server. [MIT license](LICENSE).

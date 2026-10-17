@@ -6,7 +6,7 @@
 
 The LLM (the *Model* lines below) is served by [Ollama](https://ollama.com). The harness is the Python around it: it runs the tools (*Tool* lines), checks answers (*Check* lines), and decides when to stop.
 
-The bundled [`example/input.md`](example/input.md) is the 6.390 course information and grading page, copied from the course website; every question in this README is about it. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
+The bundled [`example/input.md`](example/input.md) is the 6.390 course information and grading page; every question in this README is about this example. Below is a real run with a small local model, lightly trimmed. Every line not labeled *You* or *Model* was produced by Python.
 
 ```text
  1  You      What is the penalty for a late submission?
@@ -36,7 +36,7 @@ What to notice:
 - **Step 4.** A correct answer bounced anyway, because a rule says read around the match first. The rule is a few lines of code you can read, and the budget of bounces is a number you can change. Here the neighbors were blank lines, so the rule bought nothing. On another question it is the difference between the rule and its exception.
 - **Step 6.** The accepted answer cites a line the tools really returned. Nothing has checked that line 125 actually supports the claim, or that "see the extension policy below" does not change it. That is your job.
 
-The trace file records every step, including the exact input the model received each time. The full trace of this run is [`example/late-penalty.jsonl`](example/late-penalty.jsonl). Each `request` row holds the complete message list sent to the model at that step, so the system prompt and every tool result repeat as the conversation grows. The requests are in the OpenAI chat format that Ollama and most hosted providers accept, which is why one `--host` flag can point the same harness at a different model. Open it to inspect a step, not to read top to bottom.
+The trace file records every step, including the exact input the model received each time. The full trace of this run is [`example/late-penalty.jsonl`](example/late-penalty.jsonl). Each `request` row holds the complete message list sent to the model at that step, so the system prompt and every tool result repeat as the conversation grows. Open it to inspect a step, not to read top to bottom.
 
 ## Where the pieces are
 
@@ -51,7 +51,7 @@ The trace file records every step, including the exact input the model received 
 | `SYSTEM` | The instructions. Compare with `Evidence.check`: one asks, the other enforces |
 | `COMPACT_PROMPT` | What the harness asks the model to keep when `--compact` throws the history away |
 
-The checks are narrow on purpose. Python can verify that the model searched, read around the match, and cited lines the tools returned. Python cannot verify that line 125 supports the claim. Seeing exactly where that boundary sits is most of the lesson, and it is the same boundary in every agent you will ever use.
+The checks are narrow on purpose. Python can verify that the model searched, read around the match, and cited lines the tools returned. Python cannot verify that line 125 supports the claim. 
 
 ## Things to try
 
@@ -75,6 +75,6 @@ ollama pull qwen3:1.7b
 python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
-Flags, model sizes, limits, stop reasons, and tests are in [docs/running-baby-anigans.md](docs/running-baby-anigans.md).
+Flags, model sizes, limits, stop reasons, and tests are in [docs/running-baby-anigans.md](docs/running-baby-anigans.md). 
 
 Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](docs/baby-anigans-project-spec.md). [Tests](test_agent.py) run against a fake model, no server needed. [MIT license](LICENSE).

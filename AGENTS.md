@@ -1,6 +1,6 @@
 # Running Baby Anigans
 
-Setup, models, flags, limits, and tests. The [README](../README.md) walks through one run of the loop. A person or a coding agent should be able to follow this page without further context.
+Setup, models, flags, limits, and tests. The [README](README.md) walks through one run of the loop. A person or a coding agent should be able to follow this page without further context.
 
 ## Setup
 

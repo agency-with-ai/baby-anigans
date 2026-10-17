@@ -75,6 +75,6 @@ ollama pull qwen3:1.7b
 python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
-Flags, model sizes, limits, stop reasons, and tests are in [docs/running-baby-anigans.md](docs/running-baby-anigans.md). 
+Flags, model sizes, limits, stop reasons, and tests are in [AGENTS.md](AGENTS.md).
 
 Built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. [Project spec](docs/baby-anigans-project-spec.md). [Tests](test_agent.py) run against a fake model, no server needed. [MIT license](LICENSE).

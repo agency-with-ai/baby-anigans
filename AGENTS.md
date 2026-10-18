@@ -4,7 +4,7 @@ Setup, models, flags, limits, saved traces, and tests, written so that a person 
 
 ## Setup
 
-Requires [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download). uv fetches Python 3.10+ if the machine lacks it. No Ollama account is needed, and after the model download everything runs offline.
+Requires [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download). The repository pins Python 3.12 in `.python-version`, and uv fetches it if the machine lacks it. No Ollama account is needed, and after the model download everything runs offline.
 
 ```sh
 git clone git@github.com:agency-with-ai/baby-anigans.git

@@ -1,21 +1,20 @@
-# Running Baby Anigans
+# Baby Anigans: running guide
 
-Setup, models, flags, limits, and tests. The [README](README.md) walks through one run of the loop. A person or a coding agent should be able to follow this page without further context.
+Setup, models, flags, limits, saved traces, and tests, written so that a person or a coding agent working in this repository can follow it without further context. The [README](README.md) walks through one run of the loop; the [project spec](project-spec.md) says what the agent is for.
 
 ## Setup
 
-Requires Python 3.10+ and [Ollama](https://ollama.com/download). No Ollama account is needed, and after the model download everything runs offline.
+Requires [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download). uv fetches Python 3.10+ if the machine lacks it. No Ollama account is needed, and after the model download everything runs offline.
 
 ```sh
 git clone git@github.com:agency-with-ai/baby-anigans.git
 cd baby-anigans
-python3 -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+uv venv && uv pip install -r requirements.txt
 ollama pull qwen3:1.7b
-python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
+uv run agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
-If Ollama is not already running, start `ollama serve` in another terminal. The agent talks to Ollama through its OpenAI-compatible endpoint, `http://localhost:11434/v1`, using the `openai` Python package from `requirements.txt`. The same client reaches any server that speaks that protocol, so one `--host` flag covers local Ollama, the course server, and hosted providers. Ollama's compatibility endpoint does not take a context length per request; if the default is below 8K on your machine, start the server with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`.
+If Ollama is not already running, start `ollama serve` in another terminal. The agent talks to Ollama through its OpenAI-compatible endpoint, `http://localhost:11434/v1`, using the `openai` Python package from `requirements.txt`. `uv run` uses the `.venv` that `uv venv` made, so no activation step is needed; activate it if you prefer to type `python` directly. The same client reaches any server that speaks that protocol, so one `--host` flag covers local Ollama, the course server, and hosted providers. Ollama's compatibility endpoint does not take a context length per request; if the default is below 8K on your machine, start the server with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`.
 
 ## Models
 
@@ -41,8 +40,8 @@ With the key, the same agent runs Claude, GPT, or Gemini models with nothing ins
 
 ```sh
 export OPENAI_API_KEY=sk-parley-v1-...
-python agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?" --trace parley-claude.jsonl
-python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?" --trace parley-gpt.jsonl
+uv run agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?" --trace parley-claude.jsonl
+uv run agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?" --trace parley-gpt.jsonl
 ```
 
 `curl -H "Authorization: Bearer $OPENAI_API_KEY" https://parley.api.mit.edu/v1/models` lists the model names you can pass to `--model`. Two things to know:
@@ -54,7 +53,7 @@ The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-d
 
 ## Command-line options
 
-Run `python agent.py --help` for the full interface.
+Run `uv run agent.py --help` for the full interface.
 
 | Option | Purpose | Default |
 |---|---|---|
@@ -115,19 +114,19 @@ There is no context compaction, retry on network errors, semantic citation check
 
 | File | Command |
 |---|---|
-| `late-penalty.jsonl` | `python agent.py "What is the penalty for a late submission?"` |
-| `lab-deadline.jsonl` | `python agent.py "Are labs due in session?"` |
-| `lab-deadline-search-only.jsonl` | `python agent.py --search-only "Are labs due in session?"` |
-| `sick.jsonl` | `python agent.py "What should I do if I am sick?"` |
-| `lab-deadline-claude-opus-5-5.jsonl` | `python agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?"` |
-| `lab-deadline-gpt-5.6-sol.jsonl` | `python agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?"` |
+| `late-penalty.jsonl` | `uv run agent.py "What is the penalty for a late submission?"` |
+| `lab-deadline.jsonl` | `uv run agent.py "Are labs due in session?"` |
+| `lab-deadline-search-only.jsonl` | `uv run agent.py --search-only "Are labs due in session?"` |
+| `sick.jsonl` | `uv run agent.py "What should I do if I am sick?"` |
+| `lab-deadline-claude-opus-5-5.jsonl` | `uv run agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?"` |
+| `lab-deadline-gpt-5.6-sol.jsonl` | `uv run agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?"` |
 
 Regenerate them after any change to the system prompt, tools, or options, with `--trace example/<name>.jsonl` after deleting the old file. A test checks that the saved traces still match the current prompt, tools, and options.
 
 ## Tests
 
 ```sh
-python -m unittest discover -s . -v
+uv run python -m unittest discover -s . -v
 ```
 
 The tests use the standard library and fake model responses, so Ollama need not be running. They cover search semantics, line numbering, argument validation, message flow, the retrieval and citation checks, and stopping. They do not measure model quality.

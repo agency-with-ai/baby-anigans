@@ -67,12 +67,12 @@ Each takes a minute and the trace shows what changed.
 
 ## Running it
 
-Everything needed to install and run, including the course server, every flag, the limits and stop reasons, and the saved traces, is in [AGENTS.md](AGENTS.md). The short version, with Python 3.10+ and [Ollama](https://ollama.com/download) installed:
+Everything needed to install and run, including the course server, every flag, the limits and stop reasons, and the saved traces, is in [AGENTS.md](AGENTS.md). The short version, with [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download) installed:
 
 ```sh
-pip install -r requirements.txt
+uv venv && uv pip install -r requirements.txt
 ollama pull qwen3:1.7b
-python agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
+uv run agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
 Baby Anigans is built for [Agency with AI](https://agencyai.mit.edu), MIT 6.S950. The [project spec](project-spec.md) says what it is for and what it leaves out. The [tests](test_agent.py) run against a fake model, so they need no server. [MIT license](LICENSE).

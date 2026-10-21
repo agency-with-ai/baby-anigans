@@ -24,9 +24,9 @@ uv run agent.py "Your question" --file your-file.txt --trace baseline.jsonl
 
 Trace files include retrieved text and cannot overwrite an existing file. Keep keys out of files and commits.
 
-## Hosted models through Parley
+## Frontier models through Parley
 
-Sign in to [Parley](https://platform.parley.mit.edu) with MIT Okta and copy your API key from **My Keys**. Set `PARLEY_API_KEY` in your shell, then run the same harness with a hosted model.
+Sign in to [Parley](https://platform.parley.mit.edu) and copy your API key from **My Keys**. Set `PARLEY_API_KEY` in your shell, then run the same harness with a hosted model.
 
 ```sh
 export PARLEY_API_KEY=your-parley-key

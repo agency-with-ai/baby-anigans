@@ -4,7 +4,7 @@ Setup, models, flags, limits, saved traces, and tests, written so that a person 
 
 ## Setup
 
-Requires [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download). The repository pins Python 3.12 in `.python-version`, and uv fetches it if the machine lacks it. No Ollama account is needed, and after the model download everything runs offline.
+Choose local Ollama or hosted models through Parley. Both paths use [uv](https://docs.astral.sh/uv/) and the Python client. For local inference, also install [Ollama](https://ollama.com/download). The repository pins Python 3.12 in `.python-version`, and uv fetches it if the machine lacks it. The commands below set up local inference. No Ollama account is needed, and after the model download everything runs offline. For Parley, clone the repository and install the Python dependencies with the first three commands, then skip the Ollama commands and follow [Hosted models through Parley](#hosted-models-through-parley).
 
 ```sh
 git clone git@github.com:agency-with-ai/baby-anigans.git
@@ -14,7 +14,7 @@ ollama pull qwen3:1.7b
 uv run agent.py "What is the penalty for a late submission?" --trace first-run.jsonl
 ```
 
-If Ollama is not already running, start `ollama serve` in another terminal. The agent talks to Ollama through its OpenAI-compatible endpoint, `http://localhost:11434/v1`, using the `openai` Python package from `requirements.txt`. `uv run` uses the `.venv` that `uv venv` made, so no activation step is needed; activate it if you prefer to type `python` directly. The same client reaches any server that speaks that protocol, so one `--host` flag covers local Ollama, the course server, and hosted providers. Ollama's compatibility endpoint does not take a context length per request; if the default is below 8K on your machine, start the server with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`.
+If Ollama is not already running, start `ollama serve` in another terminal. The agent talks to Ollama through its OpenAI-compatible endpoint, `http://localhost:11434/v1`, using the `openai` Python package from `requirements.txt`. `uv run` uses the `.venv` that `uv venv` made, so no activation step is needed; activate it if you prefer to type `python` directly. The same client reaches any server that speaks that protocol, so one `--host` flag covers local Ollama and hosted providers. Ollama's compatibility endpoint does not take a context length per request; if the default is below 8K on your machine, start the server with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`.
 
 ## Models
 
@@ -27,8 +27,6 @@ Memory is what Ollama reported on our M4 Max Studio at the configured 8K context
 
 The default is a toy for inspecting the loop. It can choose poor search queries, miss evidence, or fail the citation checks, and completing one question says nothing about the next. `--model qwen3:8b` answered the late-penalty question with a citation and abstained on a question the file cannot answer in local smoke runs, but it still answered "Yes, labs are due in session" and dropped the exception; a bigger model is not a correctness guarantee.
 
-`--host https://agencyai.mit.edu/ollama/v1 --model qwen3:8b --api-key TOKEN` sends model calls to the course server instead, with the token handed out in class. The server runs `qwen3:8b` on CPU, a medium-size open model that sits between the local default and the hosted models below. `OPENAI_API_KEY=TOKEN` in the environment does the same. Any other OpenAI-compatible endpoint works the same way; see the next section for MIT's gateway.
-
 ## Hosted models through Parley
 
 [Parley](https://parley-docs.mit.edu) is MIT's gateway to commercial models, and every MIT student has an account. Getting a key takes a minute:
@@ -36,7 +34,7 @@ The default is a toy for inspecting the loop. It can choose poor search queries,
 1. Sign in at [platform.parley.mit.edu](https://platform.parley.mit.edu) with your MIT Okta login. The account is created on first login with $10 of free credit, replenished on the 1st of each month.
 2. Open **My Keys** in the sidebar and click the eye icon to reveal your `sk-parley-v1-...` key. Copy it somewhere safe and never commit it.
 
-With the key, the same agent runs Claude, GPT, or Gemini models with nothing installed locally except Python:
+With the key and Python dependencies installed, the same agent runs Claude, GPT, or Gemini models without Ollama or a local model:
 
 ```sh
 export OPENAI_API_KEY=sk-parley-v1-...
@@ -49,7 +47,7 @@ uv run agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are la
 - Your question and every line the tools retrieve leave your machine and go through the gateway to the provider. Use a file you are comfortable sending.
 - `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above, so the monthly credit covers a semester of this lab many times over. When it runs out mid-month, calls return a 402 until the next top-up.
 
-The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. That matters for reading them: the gateway returns the bare model's reply to our request, so the only harness in those traces is this repository's Python. Running the same question through Claude Code or the Codex CLI would put a second harness, with its own system prompt, tools, and retries, between our loop and the model, and the trace would not show which one made each decision. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server. The server is shared and CPU-only, so expect slower answers when many people use it at once.
+The saved traces `example/lab-deadline-claude-opus-5-5.jsonl` and `example/lab-deadline-gpt-5.6-sol.jsonl` were made this way. That matters for reading them: the gateway returns the bare model's reply to our request, so the only harness in those traces is this repository's Python. Running the same question through Claude Code or the Codex CLI would put a second harness, with its own system prompt, tools, and retries, between our loop and the model, and the trace would not show which one made each decision. The harness and file tools still run on the laptop, so students need Python and the client but not the Ollama application or a model. The question and every retrieved excerpt travel to the server.
 
 ## Command-line options
 
@@ -60,7 +58,7 @@ Run `uv run agent.py --help` for the full interface.
 | `--file PATH` | Select one UTF-8 text file | Bundled `example/input.md` |
 | `--model NAME` | Model name on the server | `qwen3:1.7b` |
 | `--host URL` | OpenAI-compatible endpoint | `http://localhost:11434/v1` |
-| `--api-key TOKEN` | API key or course token; local Ollama ignores it | `$OPENAI_API_KEY`, else `none` |
+| `--api-key TOKEN` | API key; local Ollama ignores it | `$OPENAI_API_KEY`, else `none` |
 | `--trace PATH` | Save full requests, responses, and events as JSONL; refuses to overwrite | No trace file |
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |
 | `--search-only` | Remove the reader and its required-read check | Off |

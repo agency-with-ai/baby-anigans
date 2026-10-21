@@ -44,7 +44,7 @@ Building: the tools, dispatcher, message loop, trace output, limits, and tests. 
 
 **Request:** "Are labs due in session?"
 
-The file gives a general rule, labs are released and due in session, and an exception in the next sentence: if the first checkoff is completed by the end of the lab section, the remaining checkoffs can be completed without penalty by 9pm the following Tuesday.
+The file gives a general rule—labs are released and due in session—and an exception in the next sentence: if the first checkoff is completed by the end of the lab section, the remaining checkoffs can be completed without penalty by 9pm the following Tuesday.
 
 An acceptable answer states the rule with that exception and cites the supporting line. "Yes, unless the first checkoff is done in session, in which case the rest can be finished by the following Tuesday" is acceptable. An unconditional "Yes" is not.
 
@@ -65,7 +65,7 @@ If the model searches poorly and finds nothing, the program reports that its sea
 - **Retrieval:** when is keyword search sufficient, and when does it miss relevant phrasing or distant qualifications? Compare against the whole-file baseline before adding retrieval machinery.
 - **Scaffolding:** how many corrective checks help students see the loop, and when do they obscure it? The current checks enforce observable procedure, not understanding.
 - **Learning:** does tracing and modifying this agent improve students' ability to diagnose another agent? Work on code comprehension and learning with AI may help choose an assessment; a successful demo does not answer the question.
-- **Deployment:** local inference works, and a shared CPU-only course server with a class token exists. How many students it can serve at once, and how slow it gets under load, remain unmeasured. Remote requests include retrieved file excerpts.
+- **Deployment:** local Ollama and hosted models through Parley provide two paths through the same harness. What setup problems, costs, and response times should students expect on each path? Remote requests include retrieved file excerpts.
 
 ## Review the spec
 

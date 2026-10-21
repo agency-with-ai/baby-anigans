@@ -67,7 +67,7 @@ Each takes a minute and the trace shows what changed.
 
 ## Running it
 
-Everything needed to install and run, including the course server, every flag, the limits and stop reasons, and the saved traces, is in [AGENTS.md](AGENTS.md). The short version, with [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download) installed:
+Everything needed to install and run, including local Ollama and hosted Parley setup, every flag, the limits and stop reasons, and the saved traces, is in [AGENTS.md](AGENTS.md). The short version, with [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com/download) installed:
 
 ```sh
 uv venv && uv pip install -r requirements.txt

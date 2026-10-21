@@ -255,9 +255,9 @@ def main():
     parser.add_argument("--file", type=Path, default=Path(__file__).parent / "example" / "input.md")
     parser.add_argument("--model", default="qwen3:1.7b", help="Model name on the server (default: %(default)s)")
     parser.add_argument("--host", default="http://localhost:11434/v1",
-                        help="OpenAI-compatible endpoint: local Ollama, the course server, or a provider")
+                        help="OpenAI-compatible endpoint: local Ollama, Parley, or another provider")
     parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "none"),
-                        help="API key or course token (default: $OPENAI_API_KEY)")
+                        help="API key (default: $OPENAI_API_KEY)")
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")
     parser.add_argument("--search-only", action="store_true", help="Remove the read_lines tool")
     parser.add_argument("--think", action="store_true", help="Let the model think before answering (model default effort)")

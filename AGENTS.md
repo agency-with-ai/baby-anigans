@@ -129,6 +129,28 @@ uv run python -m unittest discover -s . -v
 
 The tests use the standard library and fake model responses, so Ollama need not be running. They cover search semantics, line numbering, argument validation, message flow, the retrieval and citation checks, and stopping. They do not measure model quality.
 
+## Testing a harness change
+
+Keep the input file, question, LLM, and settings the same within each before-and-after comparison. For deadline questions, select `example/input.md`; a question about your own invented file may not exercise the change.
+
+### Choose a change and test cases
+
+- **Read limits.** Change a read limit or its tool description. Construct a call at the limit and check the returned lines or error. Test tool behavior rather than relying only on the final answer.
+- **Compaction.** Change `COMPACT_PROMPT` after collecting a run that actually compacts. Try “What should I do if I am sick?” with `--compact 2 --note "Rule: answer entirely in capital letters."`. Look for a `compact` event and inspect the next request. If compaction never occurs, try one other question, then choose another area.
+- **Answer checks.** Add an observable `Evidence` check, such as citation coverage for retrieved lines containing “except” or “however”. A test answer that omits the required citation should be handled differently. An answer that cites the exception but gives the wrong deadline can show the check's limit. Citation coverage does not verify the explanation.
+
+Before running, predict both versions' results. If the test meant to expose the change would behave alike in both versions, revise it. The test of a remaining limitation may give the same result.
+
+### Direct tool and answer checks
+
+If the LLM never attempts the relevant tool call, test it with `FileTools.dispatch`. Save the direct output separately from LLM traces and explain which one exercises the change. The final answer need not change.
+
+For direct answer checks, import `FileTools` and `Evidence` from `agent.py`. Create `files = FileTools("example/input.md")` and `evidence = Evidence(files)`. For each successful dispatch, pass the tool name, arguments, and returned line numbers to `evidence.record(...)`. Print `evidence.check(answer)`; `None` means accepted. Use identical tool calls and candidate answers before and after.
+
+### Saved-trace consistency failures
+
+Changes to prompts, tools, or options may fail `test_saved_traces_match_current_prompt_tools_and_options` because the bundled traces describe the original harness. During a lab experiment, preserve those traces and report the mismatch separately from behavioral failures. The regeneration instructions above are for maintaining the repository's examples, not for making an experimental change pass this test.
+
 ## References
 
 - [OpenAI Python client](https://github.com/openai/openai-python), used for every server

@@ -2,11 +2,11 @@
 
 **Agent = LLM + harness.** Baby Anigans answers one question about one text file. The LLM requests tools and proposes answers. Python runs the tools, checks answers, and decides whether to continue.
 
-Start with the [running guide](AGENTS.md) for local Ollama or hosted models through Parley.
+Point your agents to [running guide](AGENTS.md) for setting up the repo.
 
 ## Follow one run
 
-This is a trimmed run on the bundled [course policy](example/input.md). Every line except *You* and *Model* comes from Python.
+This is a trimmed example run, on the bundled [course policy](example/input.md). Every line except *You* and *Model* comes from Python.
 
 ```text
  1  You      What is the penalty for a late submission?

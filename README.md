@@ -4,7 +4,7 @@
 
 Point your agents to [running guide](AGENTS.md) for setting up the repo.
 
-## Follow one run
+## Example run
 
 This is a trimmed example run, on the bundled [course policy](example/input.md). Every line except *You* and *Model* comes from Python.
 

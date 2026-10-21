@@ -3,8 +3,9 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock, patch
 
-from agent import OPTIONS, SYSTEM, TOOLS, FileTools, run_agent
+from agent import OPTIONS, SYSTEM, TOOLS, FileTools, main, run_agent
 
 
 class FakeClient:
@@ -116,6 +117,25 @@ class AgentTests(unittest.TestCase):
         client = FakeClient([{"role": "assistant", "content": "Partial"}], reason="length")
         self.assertIsNone(run_agent(client, "fake", "Question", self.files, self.emit))
         self.assertEqual(self.events[-1][1]["reason"], "model_output_limit")
+
+
+class CommandLineTests(unittest.TestCase):
+    def test_api_key_selection(self):
+        cases = [
+            ({"PARLEY_API_KEY": "test-parley-key"}, [], "test-parley-key"),
+            ({"PARLEY_API_KEY": "test-parley-key"}, ["--api-key", "test-override"], "test-override"),
+            ({}, [], "none"),
+        ]
+        for environment, arguments, expected in cases:
+            with self.subTest(arguments=arguments, expected=expected):
+                factory = Mock()
+                with patch.dict("os.environ", environment, clear=True), \
+                     patch("sys.argv", ["agent.py", "Question", *arguments]), \
+                     patch.dict("sys.modules", {"openai": SimpleNamespace(OpenAI=factory)}), \
+                     patch("agent.run_agent", return_value="Test answer"), \
+                     patch("builtins.print"):
+                    self.assertEqual(main(), 0)
+                self.assertEqual(factory.call_args.kwargs["api_key"], expected)
 
 
 class SavedTraceTests(unittest.TestCase):

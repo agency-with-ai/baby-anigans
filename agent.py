@@ -256,8 +256,8 @@ def main():
     parser.add_argument("--model", default="qwen3:1.7b", help="Model name on the server (default: %(default)s)")
     parser.add_argument("--host", default="http://localhost:11434/v1",
                         help="OpenAI-compatible endpoint: local Ollama, Parley, or another provider")
-    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "none"),
-                        help="API key (default: $OPENAI_API_KEY)")
+    parser.add_argument("--api-key", default=os.environ.get("PARLEY_API_KEY", "none"),
+                        help="API key (default: $PARLEY_API_KEY)")
     parser.add_argument("--max-steps", type=int, default=8, help="Cap on model calls (default: %(default)s)")
     parser.add_argument("--search-only", action="store_true", help="Remove the read_lines tool")
     parser.add_argument("--think", action="store_true", help="Let the model think before answering (model default effort)")

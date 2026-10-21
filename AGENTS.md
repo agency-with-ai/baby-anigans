@@ -37,12 +37,12 @@ The default is a toy for inspecting the loop. It can choose poor search queries,
 With the key and Python dependencies installed, the same agent runs Claude, GPT, or Gemini models without Ollama or a local model:
 
 ```sh
-export OPENAI_API_KEY=sk-parley-v1-...
+export PARLEY_API_KEY=sk-parley-v1-...
 uv run agent.py --host https://parley.api.mit.edu/v1 --model claude-opus-5-5 "Are labs due in session?" --trace parley-claude.jsonl
 uv run agent.py --host https://parley.api.mit.edu/v1 --model gpt-5.6-sol "Are labs due in session?" --trace parley-gpt.jsonl
 ```
 
-`curl -H "Authorization: Bearer $OPENAI_API_KEY" https://parley.api.mit.edu/v1/models` lists the model names you can pass to `--model`. Two things to know:
+`curl -H "Authorization: Bearer $PARLEY_API_KEY" https://parley.api.mit.edu/v1/models` lists the model names you can pass to `--model`. Two things to know:
 
 - Your question and every line the tools retrieve leave your machine and go through the gateway to the provider. Use a file you are comfortable sending.
 - `--think` is off by default and sends `reasoning_effort: none`. Hosted reasoning models may ignore it or charge for thinking anyway; add `--think` to let the model reason at its default effort. Each run of this agent costs a fraction of a cent on the models above, so the monthly credit covers a semester of this lab many times over. When it runs out mid-month, calls return a 402 until the next top-up.
@@ -58,7 +58,7 @@ Run `uv run agent.py --help` for the full interface.
 | `--file PATH` | Select one UTF-8 text file | Bundled `example/input.md` |
 | `--model NAME` | Model name on the server | `qwen3:1.7b` |
 | `--host URL` | OpenAI-compatible endpoint | `http://localhost:11434/v1` |
-| `--api-key TOKEN` | API key; local Ollama ignores it | `$OPENAI_API_KEY`, else `none` |
+| `--api-key TOKEN` | API key; local Ollama ignores it | `$PARLEY_API_KEY`, else `none` |
 | `--trace PATH` | Save full requests, responses, and events as JSONL; refuses to overwrite | No trace file |
 | `--max-steps N` | Cap model calls, including corrective turns | 8 |
 | `--search-only` | Remove the reader and its required-read check | Off |

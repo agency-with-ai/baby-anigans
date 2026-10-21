@@ -147,7 +147,7 @@ class SavedTraceTests(unittest.TestCase):
                                                    "lab-deadline-search-only.jsonl", "lab-deadline.jsonl",
                                                    "late-penalty.jsonl", "sick.jsonl"])
         for path in paths:
-            rows = [json.loads(line) for line in path.open(encoding="utf-8")]
+            rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
             with self.subTest(trace=path.name):
                 self.assertEqual(rows[0]["event"], "request")
                 self.assertEqual(rows[-1]["event"], "stop")

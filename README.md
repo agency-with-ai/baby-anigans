@@ -6,7 +6,7 @@ Point your agents to [running guide](AGENTS.md) for setting up the repo.
 
 ## Example run
 
-This is a trimmed example run, on the bundled [course policy](example/input.md). Every line except *You* and *Model* comes from Python.
+This is a trimmed example run: Baby Anigans was asked a question about the example reference text of a [course policy](example/input.md). Every line except *You* and *Model* comes from Python.
 
 ```text
  1  You      What is the penalty for a late submission?
